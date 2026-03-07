@@ -2,11 +2,8 @@ use std::sync::Arc;
 
 use ad_core::ndarray::{NDArray, NDDataBuffer};
 use ad_core::ndarray_pool::NDArrayPool;
-use ad_core::plugin::base::PluginWorker;
-use ad_core::plugin::runtime::{NDPluginProcess, PluginParamSnapshot, PluginRuntimeHandle};
-use ad_core::plugin::{DropPolicy, NDPluginDriver};
+use ad_core::plugin::runtime::{NDPluginProcess, PluginRuntimeHandle};
 use parking_lot::Mutex;
-use tokio::sync::mpsc;
 
 /// Statistics computed from an NDArray.
 #[derive(Debug, Clone, Default)]
@@ -117,65 +114,6 @@ pub fn compute_centroid(data: &NDDataBuffer, x_size: usize, y_size: usize) -> (f
 
     (cx, cy, sx, sy)
 }
-
-// --- Legacy StatsPlugin (PluginWorker-based) ---
-
-/// Stats plugin: computes min/max/mean/sigma/total + centroid for each array.
-pub struct StatsPlugin {
-    name: String,
-    worker: PluginWorker,
-    latest_stats: Arc<Mutex<StatsResult>>,
-}
-
-impl StatsPlugin {
-    pub fn new(port_name: &str, queue_size: usize, io_intr_tx: mpsc::Sender<()>) -> Self {
-        let latest_stats: Arc<Mutex<StatsResult>> = Arc::new(Mutex::new(StatsResult::default()));
-        let stats = latest_stats.clone();
-
-        let worker = PluginWorker::new(
-            port_name,
-            queue_size,
-            DropPolicy::DropNewest,
-            move |array: Arc<NDArray>| {
-                let mut result = compute_stats(&array.data);
-                let info = array.info();
-                if info.color_size == 1 && array.dims.len() >= 2 {
-                    let (cx, cy, sx, sy) = compute_centroid(
-                        &array.data, info.x_size, info.y_size,
-                    );
-                    result.centroid_x = cx;
-                    result.centroid_y = cy;
-                    result.sigma_x = sx;
-                    result.sigma_y = sy;
-                }
-                *stats.lock() = result;
-                let _ = io_intr_tx.try_send(());
-            },
-        );
-
-        Self {
-            name: port_name.to_string(),
-            worker,
-            latest_stats,
-        }
-    }
-
-    pub fn latest_stats(&self) -> StatsResult {
-        self.latest_stats.lock().clone()
-    }
-}
-
-impl NDPluginDriver for StatsPlugin {
-    fn name(&self) -> &str {
-        &self.name
-    }
-
-    fn push_array(&self, array: Arc<NDArray>) {
-        self.worker.push(array, DropPolicy::DropNewest);
-    }
-}
-
-// --- New StatsProcessor (NDPluginProcess-based) ---
 
 /// Pure processing logic for statistics computation.
 pub struct StatsProcessor {
@@ -308,7 +246,6 @@ mod tests {
 
     #[test]
     fn test_centroid_uniform() {
-        // A uniform 4x4 image: centroid should be at center (1.5, 1.5)
         let data = NDDataBuffer::U8(vec![1; 16]);
         let (cx, cy, _, _) = compute_centroid(&data, 4, 4);
         assert!((cx - 1.5).abs() < 1e-10);
@@ -317,7 +254,6 @@ mod tests {
 
     #[test]
     fn test_centroid_corner() {
-        // Single bright pixel at (0,0)
         let mut d = vec![0u8; 16];
         d[0] = 255;
         let data = NDDataBuffer::U8(d);
@@ -325,29 +261,6 @@ mod tests {
         assert!((cx - 0.0).abs() < 1e-10);
         assert!((cy - 0.0).abs() < 1e-10);
     }
-
-    // --- Legacy StatsPlugin tests ---
-
-    #[test]
-    fn test_stats_plugin_end_to_end() {
-        let (tx, _rx) = mpsc::channel(16);
-        let plugin = StatsPlugin::new("test:stats", 10, tx);
-
-        let mut arr = NDArray::new(vec![NDDimension::new(4)], NDDataType::UInt8);
-        if let NDDataBuffer::U8(ref mut v) = arr.data {
-            v[0] = 10; v[1] = 20; v[2] = 30; v[3] = 40;
-        }
-
-        plugin.push_array(Arc::new(arr));
-        std::thread::sleep(std::time::Duration::from_millis(50));
-
-        let stats = plugin.latest_stats();
-        assert_eq!(stats.min, 10.0);
-        assert_eq!(stats.max, 40.0);
-        assert_eq!(stats.mean, 25.0);
-    }
-
-    // --- New StatsProcessor tests ---
 
     #[test]
     fn test_stats_processor_direct() {

@@ -20,9 +20,9 @@ No C dependencies. Just `cargo build`.
 - `NDArrayPool` — Free-list buffer reuse with memory tracking
 - `NDAttributeList` — Metadata attributes through processing chain
 - `NDColorMode` — Mono, Bayer, RGB1/2/3, YUV444/422
-- `ADDriverBase` — Base detector driver with plugin chain
-- `NDPluginDriver` trait — Plugin interface
-- `PluginWorker` — Background thread plugin execution
+- `ADDriverBase` — Base detector driver with channel-based plugin chain
+- `NDPluginProcess` trait — Pure plugin processing interface
+- `PluginRuntime` — Per-plugin data processing thread
 
 ### plugins
 
@@ -50,7 +50,7 @@ No C dependencies. Just `cargo build`.
 - 4 simulation modes: LinearRamp, Peaks, Sine, OffsetNoise
 - Color modes: Mono, RGB1
 - ROI cropping with min_x/y, size_x/y
-- Synchronous OS thread acquisition (Condvar-based start/stop)
+- Actor-based acquisition with PortHandle I/O and channel-based start/stop
 - Single and Continuous image modes
 - Configurable gains, noise, peak parameters
 - IOC support with st.cmd (`ioc` feature)
@@ -77,11 +77,11 @@ iocInit()
 
 ```rust
 use ad_core::ndarray::{NDArray, NDDataType};
-use ad_core::driver::ADDriverBase;
+use ad_core::driver::ad_driver::ADDriverBase;
 
-let driver = ADDriverBase::new("SIM1", 256, 256);
-driver.register_plugin(stats_plugin);
-driver.publish_array(Arc::new(array));
+let mut driver = ADDriverBase::new("SIM1", 256, 256, 50_000_000).unwrap();
+driver.connect_downstream(stats_handle.array_sender().clone());
+driver.publish_array(Arc::new(array)).unwrap();
 ```
 
 ## Testing
@@ -104,7 +104,7 @@ areadetector-rs/
       color.rs            # NDColorMode
       params/             # Parameter definitions
       driver/             # ADDriverBase, ADStatus, ImageMode
-      plugin/             # NDPluginDriver, PluginWorker
+      plugin/             # NDPluginProcess, PluginRuntime, channels
     opi/
       medm/               # ADCore MEDM .adl screens (66)
       pydm/               # PyDM .ui screens

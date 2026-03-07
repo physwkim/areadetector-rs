@@ -2,10 +2,7 @@ use std::sync::Arc;
 
 use ad_core::ndarray::{NDArray, NDDataBuffer, NDDataType, NDDimension};
 use ad_core::ndarray_pool::NDArrayPool;
-use ad_core::plugin::base::PluginWorker;
 use ad_core::plugin::runtime::NDPluginProcess;
-use ad_core::plugin::{DropPolicy, NDPluginDriver};
-use parking_lot::Mutex;
 
 /// Per-dimension ROI configuration.
 #[derive(Debug, Clone)]
@@ -145,50 +142,6 @@ pub fn extract_roi_2d(src: &NDArray, config: &ROIConfig) -> Option<NDArray> {
 fn out_data_fallback(_src: &NDDataBuffer, target: NDDataType, len: usize) -> NDDataBuffer {
     NDDataBuffer::zeros(target, len)
 }
-
-/// ROI plugin with worker thread.
-pub struct ROIPlugin {
-    name: String,
-    worker: PluginWorker,
-    latest_output: Arc<Mutex<Option<Arc<NDArray>>>>,
-}
-
-impl ROIPlugin {
-    pub fn new(port_name: &str, config: ROIConfig) -> Self {
-        let latest_output: Arc<Mutex<Option<Arc<NDArray>>>> = Arc::new(Mutex::new(None));
-        let latest = latest_output.clone();
-
-        let worker = PluginWorker::new(
-            port_name,
-            10,
-            DropPolicy::DropNewest,
-            move |array: Arc<NDArray>| {
-                if let Some(roi_arr) = extract_roi_2d(&array, &config) {
-                    *latest.lock() = Some(Arc::new(roi_arr));
-                }
-            },
-        );
-
-        Self {
-            name: port_name.to_string(),
-            worker,
-            latest_output,
-        }
-    }
-
-    pub fn latest_output(&self) -> Option<Arc<NDArray>> {
-        self.latest_output.lock().clone()
-    }
-}
-
-impl NDPluginDriver for ROIPlugin {
-    fn name(&self) -> &str { &self.name }
-    fn push_array(&self, array: Arc<NDArray>) {
-        self.worker.push(array, DropPolicy::DropNewest);
-    }
-}
-
-// --- New ROIProcessor (NDPluginProcess-based) ---
 
 /// Pure ROI processing logic.
 pub struct ROIProcessor {

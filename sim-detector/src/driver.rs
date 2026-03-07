@@ -293,8 +293,6 @@ mod tests {
     fn test_dirty_flags_on_data_type_change() {
         let rt = create_sim_detector("SIM2", 64, 64, 1_000_000, NDArrayOutput::new()).unwrap();
         let handle = rt.port_handle();
-        // Clear dirty flags
-        rt.pool.clone(); // just to use rt
         // Write data_type via PortHandle (triggers write_int32 -> set_dirty)
         handle.write_int32_blocking(rt.ad_params.base.data_type, 0, 3).unwrap();
         // Can't directly check dirty flags from outside since driver is owned by actor,

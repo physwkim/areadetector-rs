@@ -3,10 +3,7 @@ use std::sync::Arc;
 use ad_core::color::{self, NDColorMode, NDBayerPattern};
 use ad_core::ndarray::{NDArray, NDDataBuffer, NDDataType, NDDimension};
 use ad_core::ndarray_pool::NDArrayPool;
-use ad_core::plugin::base::PluginWorker;
 use ad_core::plugin::runtime::NDPluginProcess;
-use ad_core::plugin::{DropPolicy, NDPluginDriver};
-use parking_lot::Mutex;
 
 /// Simple Bayer demosaic using bilinear interpolation.
 pub fn bayer_to_rgb1(src: &NDArray, pattern: NDBayerPattern) -> Option<NDArray> {
@@ -152,65 +149,6 @@ pub struct ColorConvertConfig {
     pub bayer_pattern: NDBayerPattern,
 }
 
-/// ColorConvert plugin wrapping color.rs utilities.
-pub struct ColorConvertPlugin {
-    name: String,
-    worker: PluginWorker,
-    latest_output: Arc<Mutex<Option<Arc<NDArray>>>>,
-}
-
-impl ColorConvertPlugin {
-    pub fn new(port_name: &str, config: ColorConvertConfig) -> Self {
-        let latest_output: Arc<Mutex<Option<Arc<NDArray>>>> = Arc::new(Mutex::new(None));
-        let latest = latest_output.clone();
-
-        let worker = PluginWorker::new(
-            port_name,
-            10,
-            DropPolicy::DropNewest,
-            move |array: Arc<NDArray>| {
-                let result = match config.target_mode {
-                    NDColorMode::Mono => color::rgb1_to_mono(&array).ok(),
-                    NDColorMode::RGB1 => {
-                        if array.dims.len() == 2 {
-                            // Mono or Bayer → RGB1
-                            bayer_to_rgb1(&array, config.bayer_pattern)
-                                .or_else(|| color::mono_to_rgb1(&array).ok())
-                        } else {
-                            color::convert_rgb_layout(
-                                &array, NDColorMode::RGB2, NDColorMode::RGB1,
-                            ).ok()
-                        }
-                    }
-                    _ => None,
-                };
-                if let Some(out) = result {
-                    *latest.lock() = Some(Arc::new(out));
-                }
-            },
-        );
-
-        Self {
-            name: port_name.to_string(),
-            worker,
-            latest_output,
-        }
-    }
-
-    pub fn latest_output(&self) -> Option<Arc<NDArray>> {
-        self.latest_output.lock().clone()
-    }
-}
-
-impl NDPluginDriver for ColorConvertPlugin {
-    fn name(&self) -> &str { &self.name }
-    fn push_array(&self, array: Arc<NDArray>) {
-        self.worker.push(array, DropPolicy::DropNewest);
-    }
-}
-
-// --- New ColorConvertProcessor (NDPluginProcess-based) ---
-
 /// Pure color conversion processing logic.
 pub struct ColorConvertProcessor {
     config: ColorConvertConfig,
@@ -271,31 +209,6 @@ mod tests {
         assert_eq!(rgb.dims[1].size, 4); // x
         assert_eq!(rgb.dims[2].size, 4); // y
     }
-
-    #[test]
-    fn test_mono_to_rgb1_via_plugin() {
-        let config = ColorConvertConfig {
-            target_mode: NDColorMode::RGB1,
-            bayer_pattern: NDBayerPattern::RGGB,
-        };
-        let plugin = ColorConvertPlugin::new("test:cc", config);
-
-        let mut arr = NDArray::new(
-            vec![NDDimension::new(2), NDDimension::new(2)],
-            NDDataType::UInt8,
-        );
-        if let NDDataBuffer::U8(ref mut v) = arr.data {
-            v[0] = 100; v[1] = 200; v[2] = 50; v[3] = 150;
-        }
-
-        plugin.push_array(Arc::new(arr));
-        std::thread::sleep(std::time::Duration::from_millis(50));
-
-        let out = plugin.latest_output().unwrap();
-        assert_eq!(out.dims[0].size, 3);
-    }
-
-    // --- New ColorConvertProcessor tests ---
 
     #[test]
     fn test_color_convert_processor_bayer() {

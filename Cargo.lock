@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "ad-core"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "asyn-rs",
  "parking_lot",
@@ -15,7 +15,7 @@ dependencies = [
 
 [[package]]
 name = "ad-plugins"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "ad-core",
  "asyn-rs",
@@ -663,7 +663,7 @@ dependencies = [
 
 [[package]]
 name = "sim-detector"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "ad-core",
  "asyn-rs",

@@ -62,7 +62,7 @@ pub fn ndarray_channel(port_name: &str, queue_size: usize) -> (NDArraySender, ND
     )
 }
 
-/// Fan-out: replaces `Vec<Arc<dyn NDPluginDriver>>`.
+/// Fan-out: broadcasts arrays to multiple downstream receivers.
 pub struct NDArrayOutput {
     senders: Vec<NDArraySender>,
 }

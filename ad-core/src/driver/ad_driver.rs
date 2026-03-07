@@ -230,15 +230,14 @@ mod tests {
             .unwrap();
         ad.publish_array(Arc::new(arr)).unwrap();
 
-        // Counter still increments, but generic pointer should NOT be set
+        // Counter still increments, but generic pointer should NOT be updated to an NDArray
         assert_eq!(
             ad.port_base.get_int32_param(ad.params.base.array_counter, 0).unwrap(),
             1
         );
-        // Generic pointer should still be None since callbacks were disabled
-        assert!(
-            ad.port_base.get_generic_pointer_param(ad.params.base.ndarray_data, 0).is_err()
-        );
+        // Generic pointer should still be the default (unit type), not an NDArray
+        let gp = ad.port_base.get_generic_pointer_param(ad.params.base.ndarray_data, 0).unwrap();
+        assert!(gp.downcast_ref::<NDArray>().is_none());
     }
 
     #[test]
