@@ -102,9 +102,10 @@ async fn main() -> CaResult<()> {
     let args: Vec<String> = std::env::args().collect();
 
     // Set module paths as env vars (like C++ EPICS envPaths)
-    // Allows st.cmd to use: dbLoadRecords("$(SIM_DETECTOR)/Db/simDetector.db", ...)
+    // Allows st.cmd to use: dbLoadRecords("$(SIM_DETECTOR)/Db/...", ...)
     unsafe {
         std::env::set_var("SIM_DETECTOR", sim_detector::DB_DIR.trim_end_matches("/Db"));
+        std::env::set_var("AD_CORE", ad_core::DB_DIR.trim_end_matches("/Db"));
     }
 
     let script = if args.len() > 1 && !args[1].starts_with('-') {

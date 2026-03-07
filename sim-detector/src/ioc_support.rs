@@ -6,7 +6,6 @@ use asyn_rs::port_handle::PortHandle;
 use epics_base_rs::error::CaResult;
 use epics_base_rs::server::device_support::{DeviceSupport, WriteCompletion};
 use epics_base_rs::server::record::{Record, ScanType};
-use epics_base_rs::types::EpicsValue;
 
 use ad_core::params::ADBaseParams;
 use crate::params::SimDetectorParams;
@@ -51,27 +50,181 @@ pub fn build_param_registry_from_params(ad: &ADBaseParams, sim: &SimDetectorPara
     let mut map = HashMap::new();
     let base = &ad.base;
 
-    // Float64 writable params (ao records)
-    map.insert("Gain".into(), ParamInfo::float64(sim.gain, "SIM_GAIN"));
-    map.insert("GainX".into(), ParamInfo::float64(sim.gain_x, "SIM_GAIN_X"));
-    map.insert("GainY".into(), ParamInfo::float64(sim.gain_y, "SIM_GAIN_Y"));
-    map.insert("GainRed".into(), ParamInfo::float64(sim.gain_red, "SIM_GAIN_RED"));
-    map.insert("GainGreen".into(), ParamInfo::float64(sim.gain_green, "SIM_GAIN_GREEN"));
-    map.insert("GainBlue".into(), ParamInfo::float64(sim.gain_blue, "SIM_GAIN_BLUE"));
-    map.insert("Offset".into(), ParamInfo::float64(sim.offset, "SIM_OFFSET"));
-    map.insert("Noise".into(), ParamInfo::float64(sim.noise, "SIM_NOISE"));
-    map.insert("AcquireTime".into(), ParamInfo::float64(ad.acquire_time, "ACQ_TIME"));
-    map.insert("AcquirePeriod".into(), ParamInfo::float64(ad.acquire_period, "ACQ_PERIOD"));
-    map.insert("PeakHeightVariation".into(), ParamInfo::float64(sim.peak_height_variation, "SIM_PEAK_HEIGHT_VAR"));
+    // ===== ADBase.db params =====
 
-    // Int32 writable params (longout/bo records)
+    // Image size (Int32)
+    map.insert("MaxSizeX_RBV".into(), ParamInfo::int32(ad.max_size_x, "MAX_SIZE_X"));
+    map.insert("MaxSizeY_RBV".into(), ParamInfo::int32(ad.max_size_y, "MAX_SIZE_Y"));
+    map.insert("SizeX".into(), ParamInfo::int32(ad.size_x, "SIZE_X"));
+    map.insert("SizeX_RBV".into(), ParamInfo::int32(ad.size_x, "SIZE_X"));
+    map.insert("SizeY".into(), ParamInfo::int32(ad.size_y, "SIZE_Y"));
+    map.insert("SizeY_RBV".into(), ParamInfo::int32(ad.size_y, "SIZE_Y"));
+    map.insert("MinX".into(), ParamInfo::int32(ad.min_x, "MIN_X"));
+    map.insert("MinX_RBV".into(), ParamInfo::int32(ad.min_x, "MIN_X"));
+    map.insert("MinY".into(), ParamInfo::int32(ad.min_y, "MIN_Y"));
+    map.insert("MinY_RBV".into(), ParamInfo::int32(ad.min_y, "MIN_Y"));
+    map.insert("BinX".into(), ParamInfo::int32(ad.bin_x, "BIN_X"));
+    map.insert("BinX_RBV".into(), ParamInfo::int32(ad.bin_x, "BIN_X"));
+    map.insert("BinY".into(), ParamInfo::int32(ad.bin_y, "BIN_Y"));
+    map.insert("BinY_RBV".into(), ParamInfo::int32(ad.bin_y, "BIN_Y"));
+    map.insert("ReverseX".into(), ParamInfo::int32(ad.reverse_x, "REVERSE_X"));
+    map.insert("ReverseX_RBV".into(), ParamInfo::int32(ad.reverse_x, "REVERSE_X"));
+    map.insert("ReverseY".into(), ParamInfo::int32(ad.reverse_y, "REVERSE_Y"));
+    map.insert("ReverseY_RBV".into(), ParamInfo::int32(ad.reverse_y, "REVERSE_Y"));
+
+    // Acquire control
     map.insert("Acquire".into(), ParamInfo::int32(ad.acquire, "ACQUIRE"));
-    map.insert("SimMode".into(), ParamInfo::int32(sim.sim_mode, "SIM_MODE"));
+    map.insert("Acquire_RBV".into(), ParamInfo::int32(ad.acquire, "ACQUIRE"));
     map.insert("ImageMode".into(), ParamInfo::int32(ad.image_mode, "IMAGE_MODE"));
-    map.insert("DataType".into(), ParamInfo::int32(base.data_type, "DATA_TYPE"));
-    map.insert("ColorMode".into(), ParamInfo::int32(base.color_mode, "COLOR_MODE"));
+    map.insert("ImageMode_RBV".into(), ParamInfo::int32(ad.image_mode, "IMAGE_MODE"));
     map.insert("NumImages".into(), ParamInfo::int32(ad.num_images, "NUM_IMAGES"));
-    map.insert("ResetImage".into(), ParamInfo::int32(sim.reset_image, "SIM_RESET_IMAGE"));
+    map.insert("NumImages_RBV".into(), ParamInfo::int32(ad.num_images, "NUM_IMAGES"));
+    map.insert("NumImagesCounter_RBV".into(), ParamInfo::int32(ad.num_images_counter, "NUM_IMAGES_COUNTER"));
+    map.insert("NumExposures".into(), ParamInfo::int32(ad.num_exposures, "NUM_EXPOSURES"));
+    map.insert("NumExposures_RBV".into(), ParamInfo::int32(ad.num_exposures, "NUM_EXPOSURES"));
+    map.insert("NumExposuresCounter_RBV".into(), ParamInfo::int32(ad.num_exposures_counter, "NUM_EXPOSURES_COUNTER"));
+    map.insert("AcquireTime".into(), ParamInfo::float64(ad.acquire_time, "ACQUIRE_TIME"));
+    map.insert("AcquireTime_RBV".into(), ParamInfo::float64(ad.acquire_time, "ACQUIRE_TIME"));
+    map.insert("AcquirePeriod".into(), ParamInfo::float64(ad.acquire_period, "ACQUIRE_PERIOD"));
+    map.insert("AcquirePeriod_RBV".into(), ParamInfo::float64(ad.acquire_period, "ACQUIRE_PERIOD"));
+    map.insert("TimeRemaining_RBV".into(), ParamInfo::float64(ad.time_remaining, "TIME_REMAINING"));
+    map.insert("Status_RBV".into(), ParamInfo::int32(ad.status, "DETECTOR_STATE"));
+    map.insert("StatusMessage_RBV".into(), ParamInfo::string(ad.status_message, "STATUS_MESSAGE"));
+    map.insert("AcquireBusy".into(), ParamInfo::int32(ad.acquire_busy, "ACQUIRE_BUSY"));
+    map.insert("AcquireBusy_RBV".into(), ParamInfo::int32(ad.acquire_busy, "ACQUIRE_BUSY"));
+    map.insert("WaitForPlugins".into(), ParamInfo::int32(ad.wait_for_plugins, "WAIT_FOR_PLUGINS"));
+    map.insert("ReadStatus".into(), ParamInfo::int32(ad.read_status, "READ_STATUS"));
+
+    // Detector (ADGain is the ADDriver-level gain, distinct from sim Gain)
+    map.insert("ADGain".into(), ParamInfo::float64(ad.gain, "GAIN"));
+    map.insert("ADGain_RBV".into(), ParamInfo::float64(ad.gain, "GAIN"));
+    map.insert("FrameType".into(), ParamInfo::int32(ad.frame_type, "FRAME_TYPE"));
+    map.insert("FrameType_RBV".into(), ParamInfo::int32(ad.frame_type, "FRAME_TYPE"));
+    map.insert("TriggerMode".into(), ParamInfo::int32(ad.trigger_mode, "TRIGGER_MODE"));
+    map.insert("TriggerMode_RBV".into(), ParamInfo::int32(ad.trigger_mode, "TRIGGER_MODE"));
+
+    // Shutter
+    map.insert("ShutterControl".into(), ParamInfo::int32(ad.shutter_control, "SHUTTER_CONTROL"));
+    map.insert("ShutterControl_RBV".into(), ParamInfo::int32(ad.shutter_control, "SHUTTER_CONTROL"));
+    map.insert("ShutterControlEPICS".into(), ParamInfo::int32(ad.shutter_control_epics, "SHUTTER_CONTROL_EPICS"));
+    map.insert("ShutterStatus_RBV".into(), ParamInfo::int32(ad.shutter_status, "SHUTTER_STATUS"));
+    map.insert("ShutterMode".into(), ParamInfo::int32(ad.shutter_mode, "SHUTTER_MODE"));
+    map.insert("ShutterMode_RBV".into(), ParamInfo::int32(ad.shutter_mode, "SHUTTER_MODE"));
+    map.insert("ShutterOpenDelay".into(), ParamInfo::float64(ad.shutter_open_delay, "SHUTTER_OPEN_DELAY"));
+    map.insert("ShutterOpenDelay_RBV".into(), ParamInfo::float64(ad.shutter_open_delay, "SHUTTER_OPEN_DELAY"));
+    map.insert("ShutterCloseDelay".into(), ParamInfo::float64(ad.shutter_close_delay, "SHUTTER_CLOSE_DELAY"));
+    map.insert("ShutterCloseDelay_RBV".into(), ParamInfo::float64(ad.shutter_close_delay, "SHUTTER_CLOSE_DELAY"));
+
+    // Temperature
+    map.insert("Temperature".into(), ParamInfo::float64(ad.temperature, "TEMPERATURE"));
+    map.insert("Temperature_RBV".into(), ParamInfo::float64(ad.temperature, "TEMPERATURE"));
+    map.insert("TemperatureActual".into(), ParamInfo::float64(ad.temperature_actual, "TEMPERATURE_ACTUAL"));
+
+    // Communication
+    map.insert("StringToServer".into(), ParamInfo::string(ad.string_to_server, "STRING_TO_SERVER"));
+    map.insert("StringFromServer_RBV".into(), ParamInfo::string(ad.string_from_server, "STRING_FROM_SERVER"));
+
+    // ===== NDArrayBase.db params =====
+
+    // Detector info (string)
+    map.insert("Manufacturer_RBV".into(), ParamInfo::string(base.manufacturer, "MANUFACTURER"));
+    map.insert("Model_RBV".into(), ParamInfo::string(base.model, "MODEL"));
+    map.insert("SerialNumber_RBV".into(), ParamInfo::string(base.serial_number, "SERIAL_NUMBER"));
+    map.insert("FirmwareVersion_RBV".into(), ParamInfo::string(base.firmware_version, "FIRMWARE_VERSION"));
+    map.insert("SDKVersion_RBV".into(), ParamInfo::string(base.sdk_version, "SDK_VERSION"));
+
+    // Array info (Int32)
+    map.insert("ArraySizeX_RBV".into(), ParamInfo::int32(base.array_size_x, "ARRAY_SIZE_X"));
+    map.insert("ArraySizeY_RBV".into(), ParamInfo::int32(base.array_size_y, "ARRAY_SIZE_Y"));
+    map.insert("ArraySizeZ_RBV".into(), ParamInfo::int32(base.array_size_z, "ARRAY_SIZE_Z"));
+    map.insert("ArraySize_RBV".into(), ParamInfo::int32(base.array_size, "ARRAY_SIZE"));
+    map.insert("ArrayCounter".into(), ParamInfo::int32(base.array_counter, "ARRAY_COUNTER"));
+    map.insert("ArrayCounter_RBV".into(), ParamInfo::int32(base.array_counter, "ARRAY_COUNTER"));
+    map.insert("ArrayCallbacks".into(), ParamInfo::int32(base.array_callbacks, "ARRAY_CALLBACKS"));
+    map.insert("ArrayCallbacks_RBV".into(), ParamInfo::int32(base.array_callbacks, "ARRAY_CALLBACKS"));
+    map.insert("NDimensions_RBV".into(), ParamInfo::int32(base.n_dimensions, "NDIMENSIONS"));
+    map.insert("DataType".into(), ParamInfo::int32(base.data_type, "DATA_TYPE"));
+    map.insert("DataType_RBV".into(), ParamInfo::int32(base.data_type, "DATA_TYPE"));
+    map.insert("ColorMode".into(), ParamInfo::int32(base.color_mode, "COLOR_MODE"));
+    map.insert("ColorMode_RBV".into(), ParamInfo::int32(base.color_mode, "COLOR_MODE"));
+    map.insert("UniqueId_RBV".into(), ParamInfo::int32(base.unique_id, "UNIQUE_ID"));
+
+    // Pool stats (Int32)
+    map.insert("PoolMaxMem_RBV".into(), ParamInfo::int32(base.pool_max_memory, "POOL_MAX_MEMORY"));
+    map.insert("PoolUsedMem_RBV".into(), ParamInfo::int32(base.pool_used_memory, "POOL_USED_MEMORY"));
+    map.insert("PoolAllocBuffers_RBV".into(), ParamInfo::int32(base.pool_alloc_buffers, "POOL_ALLOC_BUFFERS"));
+    map.insert("PoolFreeBuffers_RBV".into(), ParamInfo::int32(base.pool_free_buffers, "POOL_FREE_BUFFERS"));
+    map.insert("PoolMaxBuffers_RBV".into(), ParamInfo::int32(base.pool_max_buffers, "POOL_MAX_BUFFERS"));
+    map.insert("PoolPreAlloc".into(), ParamInfo::int32(base.pool_pre_alloc, "POOL_PRE_ALLOC"));
+    map.insert("PoolEmptyFreeList".into(), ParamInfo::int32(base.pool_empty_free_list, "POOL_EMPTY_FREE_LIST"));
+    map.insert("NumQueuedArrays_RBV".into(), ParamInfo::int32(base.num_queued_arrays, "NUM_QUEUED_ARRAYS"));
+
+    // Attributes
+    map.insert("NDAttributesFile".into(), ParamInfo::string(base.attributes_file, "ATTRIBUTES_FILE"));
+    map.insert("NDAttributesStatus_RBV".into(), ParamInfo::int32(base.attributes_status, "ATTRIBUTES_STATUS"));
+    map.insert("NDAttributesMacros".into(), ParamInfo::string(base.attributes_macros, "ATTRIBUTES_MACROS"));
+
+    // ===== NDFile.db params =====
+
+    map.insert("FilePath".into(), ParamInfo::string(base.file_path, "FILE_PATH"));
+    map.insert("FilePath_RBV".into(), ParamInfo::string(base.file_path, "FILE_PATH"));
+    map.insert("FileName".into(), ParamInfo::string(base.file_name, "FILE_NAME"));
+    map.insert("FileName_RBV".into(), ParamInfo::string(base.file_name, "FILE_NAME"));
+    map.insert("FileNumber".into(), ParamInfo::int32(base.file_number, "FILE_NUMBER"));
+    map.insert("FileNumber_RBV".into(), ParamInfo::int32(base.file_number, "FILE_NUMBER"));
+    map.insert("FileTemplate".into(), ParamInfo::string(base.file_template, "FILE_TEMPLATE"));
+    map.insert("FileTemplate_RBV".into(), ParamInfo::string(base.file_template, "FILE_TEMPLATE"));
+    map.insert("AutoIncrement".into(), ParamInfo::int32(base.auto_increment, "AUTO_INCREMENT"));
+    map.insert("AutoIncrement_RBV".into(), ParamInfo::int32(base.auto_increment, "AUTO_INCREMENT"));
+    map.insert("FullFileName_RBV".into(), ParamInfo::string(base.full_file_name, "FULL_FILE_NAME"));
+    map.insert("FilePathExists_RBV".into(), ParamInfo::int32(base.file_path_exists, "FILE_PATH_EXISTS"));
+    map.insert("WriteFile".into(), ParamInfo::int32(base.write_file, "WRITE_FILE"));
+    map.insert("WriteFile_RBV".into(), ParamInfo::int32(base.write_file, "WRITE_FILE"));
+    map.insert("ReadFile".into(), ParamInfo::int32(base.read_file, "READ_FILE"));
+    map.insert("ReadFile_RBV".into(), ParamInfo::int32(base.read_file, "READ_FILE"));
+    map.insert("FileWriteMode".into(), ParamInfo::int32(base.file_write_mode, "FILE_WRITE_MODE"));
+    map.insert("FileWriteMode_RBV".into(), ParamInfo::int32(base.file_write_mode, "FILE_WRITE_MODE"));
+    map.insert("FileWriteStatus_RBV".into(), ParamInfo::int32(base.file_write_status, "FILE_WRITE_STATUS"));
+    map.insert("FileWriteMessage_RBV".into(), ParamInfo::string(base.file_write_message, "FILE_WRITE_MESSAGE"));
+    map.insert("NumCapture".into(), ParamInfo::int32(base.num_capture, "NUM_CAPTURE"));
+    map.insert("NumCapture_RBV".into(), ParamInfo::int32(base.num_capture, "NUM_CAPTURE"));
+    map.insert("NumCaptured_RBV".into(), ParamInfo::int32(base.num_captured, "NUM_CAPTURED"));
+    map.insert("Capture".into(), ParamInfo::int32(base.capture, "CAPTURE"));
+    map.insert("Capture_RBV".into(), ParamInfo::int32(base.capture, "CAPTURE"));
+    map.insert("DeleteDriverFile".into(), ParamInfo::int32(base.delete_driver_file, "DELETE_DRIVER_FILE"));
+    map.insert("DeleteDriverFile_RBV".into(), ParamInfo::int32(base.delete_driver_file, "DELETE_DRIVER_FILE"));
+    map.insert("LazyOpen".into(), ParamInfo::int32(base.lazy_open, "LAZY_OPEN"));
+    map.insert("LazyOpen_RBV".into(), ParamInfo::int32(base.lazy_open, "LAZY_OPEN"));
+    map.insert("CreateDir".into(), ParamInfo::int32(base.create_dir, "CREATE_DIR"));
+    map.insert("CreateDir_RBV".into(), ParamInfo::int32(base.create_dir, "CREATE_DIR"));
+    map.insert("TempSuffix".into(), ParamInfo::string(base.temp_suffix, "TEMP_SUFFIX"));
+    map.insert("TempSuffix_RBV".into(), ParamInfo::string(base.temp_suffix, "TEMP_SUFFIX"));
+
+    // ===== simDetector.db params =====
+
+    // Sim gains (Float64)
+    map.insert("Gain".into(), ParamInfo::float64(sim.gain, "AD_GAIN"));
+    map.insert("Gain_RBV".into(), ParamInfo::float64(sim.gain, "AD_GAIN"));
+    map.insert("GainX".into(), ParamInfo::float64(sim.gain_x, "SIM_GAIN_X"));
+    map.insert("GainX_RBV".into(), ParamInfo::float64(sim.gain_x, "SIM_GAIN_X"));
+    map.insert("GainY".into(), ParamInfo::float64(sim.gain_y, "SIM_GAIN_Y"));
+    map.insert("GainY_RBV".into(), ParamInfo::float64(sim.gain_y, "SIM_GAIN_Y"));
+    map.insert("GainRed".into(), ParamInfo::float64(sim.gain_red, "SIM_GAIN_RED"));
+    map.insert("GainRed_RBV".into(), ParamInfo::float64(sim.gain_red, "SIM_GAIN_RED"));
+    map.insert("GainGreen".into(), ParamInfo::float64(sim.gain_green, "SIM_GAIN_GREEN"));
+    map.insert("GainGreen_RBV".into(), ParamInfo::float64(sim.gain_green, "SIM_GAIN_GREEN"));
+    map.insert("GainBlue".into(), ParamInfo::float64(sim.gain_blue, "SIM_GAIN_BLUE"));
+    map.insert("GainBlue_RBV".into(), ParamInfo::float64(sim.gain_blue, "SIM_GAIN_BLUE"));
+    map.insert("Offset".into(), ParamInfo::float64(sim.offset, "SIM_OFFSET"));
+    map.insert("Offset_RBV".into(), ParamInfo::float64(sim.offset, "SIM_OFFSET"));
+    map.insert("Noise".into(), ParamInfo::float64(sim.noise, "SIM_NOISE"));
+    map.insert("Noise_RBV".into(), ParamInfo::float64(sim.noise, "SIM_NOISE"));
+    map.insert("PeakHeightVariation".into(), ParamInfo::float64(sim.peak_height_variation, "SIM_PEAK_HEIGHT_VARIATION"));
+
+    // Sim Int32
+    map.insert("SimMode".into(), ParamInfo::int32(sim.sim_mode, "SIM_MODE"));
+    map.insert("SimMode_RBV".into(), ParamInfo::int32(sim.sim_mode, "SIM_MODE"));
+    map.insert("ResetImage".into(), ParamInfo::int32(sim.reset_image, "RESET_IMAGE"));
     map.insert("PeakStartX".into(), ParamInfo::int32(sim.peak_start_x, "SIM_PEAK_START_X"));
     map.insert("PeakStartY".into(), ParamInfo::int32(sim.peak_start_y, "SIM_PEAK_START_Y"));
     map.insert("PeakWidthX".into(), ParamInfo::int32(sim.peak_width_x, "SIM_PEAK_WIDTH_X"));
@@ -81,38 +234,21 @@ pub fn build_param_registry_from_params(ad: &ADBaseParams, sim: &SimDetectorPara
     map.insert("PeakStepX".into(), ParamInfo::int32(sim.peak_step_x, "SIM_PEAK_STEP_X"));
     map.insert("PeakStepY".into(), ParamInfo::int32(sim.peak_step_y, "SIM_PEAK_STEP_Y"));
 
-    // Readback versions of writable params (_RBV)
-    map.insert("Gain_RBV".into(), ParamInfo::float64(sim.gain, "SIM_GAIN"));
-    map.insert("GainX_RBV".into(), ParamInfo::float64(sim.gain_x, "SIM_GAIN_X"));
-    map.insert("GainY_RBV".into(), ParamInfo::float64(sim.gain_y, "SIM_GAIN_Y"));
-    map.insert("GainRed_RBV".into(), ParamInfo::float64(sim.gain_red, "SIM_GAIN_RED"));
-    map.insert("GainGreen_RBV".into(), ParamInfo::float64(sim.gain_green, "SIM_GAIN_GREEN"));
-    map.insert("GainBlue_RBV".into(), ParamInfo::float64(sim.gain_blue, "SIM_GAIN_BLUE"));
-    map.insert("Offset_RBV".into(), ParamInfo::float64(sim.offset, "SIM_OFFSET"));
-    map.insert("Noise_RBV".into(), ParamInfo::float64(sim.noise, "SIM_NOISE"));
-    map.insert("AcquireTime_RBV".into(), ParamInfo::float64(ad.acquire_time, "ACQ_TIME"));
-    map.insert("AcquirePeriod_RBV".into(), ParamInfo::float64(ad.acquire_period, "ACQ_PERIOD"));
-    map.insert("SimMode_RBV".into(), ParamInfo::int32(sim.sim_mode, "SIM_MODE"));
-    map.insert("ImageMode_RBV".into(), ParamInfo::int32(ad.image_mode, "IMAGE_MODE"));
-    map.insert("DataType_RBV".into(), ParamInfo::int32(base.data_type, "DATA_TYPE"));
-    map.insert("ColorMode_RBV".into(), ParamInfo::int32(base.color_mode, "COLOR_MODE"));
-    map.insert("NumImages_RBV".into(), ParamInfo::int32(ad.num_images, "NUM_IMAGES"));
-
-    // Read-only int32 params (longin records)
-    map.insert("MaxSizeX_RBV".into(), ParamInfo::int32(ad.max_size_x, "MAX_SIZE_X"));
-    map.insert("MaxSizeY_RBV".into(), ParamInfo::int32(ad.max_size_y, "MAX_SIZE_Y"));
-    map.insert("ArrayCounter_RBV".into(), ParamInfo::int32(base.array_counter, "ARRAY_COUNTER"));
-    map.insert("ArraySizeX_RBV".into(), ParamInfo::int32(base.array_size_x, "ARRAY_SIZE_X"));
-    map.insert("ArraySizeY_RBV".into(), ParamInfo::int32(base.array_size_y, "ARRAY_SIZE_Y"));
-    map.insert("ArraySizeZ_RBV".into(), ParamInfo::int32(base.array_size_z, "ARRAY_SIZE_Z"));
-    map.insert("NumImagesCounter_RBV".into(), ParamInfo::int32(ad.num_images_counter, "NUM_IMAGES_COUNTER"));
-    map.insert("Acquire_RBV".into(), ParamInfo::int32(ad.acquire, "ACQUIRE"));
-    map.insert("Status_RBV".into(), ParamInfo::int32(ad.status, "STATUS"));
-
-    // Read-only string params (stringin records)
-    map.insert("StatusMessage_RBV".into(), ParamInfo::string(ad.status_message, "STATUS_MESSAGE"));
-    map.insert("Manufacturer_RBV".into(), ParamInfo::string(base.manufacturer, "MANUFACTURER"));
-    map.insert("Model_RBV".into(), ParamInfo::string(base.model, "MODEL"));
+    // Sine params (Float64 + Int32)
+    map.insert("XSineOperation".into(), ParamInfo::int32(sim.x_sine_operation, "SIM_XSINE_OPERATION"));
+    map.insert("XSine1Amplitude".into(), ParamInfo::float64(sim.x_sine1_amplitude, "SIM_XSINE1_AMPLITUDE"));
+    map.insert("XSine1Frequency".into(), ParamInfo::float64(sim.x_sine1_frequency, "SIM_XSINE1_FREQUENCY"));
+    map.insert("XSine1Phase".into(), ParamInfo::float64(sim.x_sine1_phase, "SIM_XSINE1_PHASE"));
+    map.insert("XSine2Amplitude".into(), ParamInfo::float64(sim.x_sine2_amplitude, "SIM_XSINE2_AMPLITUDE"));
+    map.insert("XSine2Frequency".into(), ParamInfo::float64(sim.x_sine2_frequency, "SIM_XSINE2_FREQUENCY"));
+    map.insert("XSine2Phase".into(), ParamInfo::float64(sim.x_sine2_phase, "SIM_XSINE2_PHASE"));
+    map.insert("YSineOperation".into(), ParamInfo::int32(sim.y_sine_operation, "SIM_YSINE_OPERATION"));
+    map.insert("YSine1Amplitude".into(), ParamInfo::float64(sim.y_sine1_amplitude, "SIM_YSINE1_AMPLITUDE"));
+    map.insert("YSine1Frequency".into(), ParamInfo::float64(sim.y_sine1_frequency, "SIM_YSINE1_FREQUENCY"));
+    map.insert("YSine1Phase".into(), ParamInfo::float64(sim.y_sine1_phase, "SIM_YSINE1_PHASE"));
+    map.insert("YSine2Amplitude".into(), ParamInfo::float64(sim.y_sine2_amplitude, "SIM_YSINE2_AMPLITUDE"));
+    map.insert("YSine2Frequency".into(), ParamInfo::float64(sim.y_sine2_frequency, "SIM_YSINE2_FREQUENCY"));
+    map.insert("YSine2Phase".into(), ParamInfo::float64(sim.y_sine2_phase, "SIM_YSINE2_PHASE"));
 
     map
 }

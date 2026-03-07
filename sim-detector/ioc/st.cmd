@@ -17,13 +17,18 @@ epicsEnvSet("CAM",    "cam1:")
 # simDetectorConfig(portName, sizeX, sizeY, maxMemory)
 simDetectorConfig("SIM1", 256, 256, 50000000)
 
-# Load the detector database
-# Path is relative to working directory (typically the workspace root)
+# Load the detector databases
+# AD base records (image size, acquire control, shutter, temperature)
+dbLoadRecords("$(AD_CORE)/Db/ADBase.db", "P=$(PREFIX),R=$(CAM)")
+# NDArray base records (array info, pool stats, attributes)
+dbLoadRecords("$(AD_CORE)/Db/NDArrayBase.db", "P=$(PREFIX),R=$(CAM)")
+# File I/O records
+dbLoadRecords("$(AD_CORE)/Db/NDFile.db", "P=$(PREFIX),R=$(CAM)")
+# SimDetector-specific records (gains, peaks, sine, sim mode)
 dbLoadRecords("$(SIM_DETECTOR)/Db/simDetector.db", "P=$(PREFIX),R=$(CAM)")
 
 # iocInit is called automatically by IocApplication after this script completes.
-iocInit()
-
+#
 # After init, the interactive iocsh shell starts.
 #
 # Example interactive commands:

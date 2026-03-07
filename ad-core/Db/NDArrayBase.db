@@ -1,0 +1,170 @@
+#=================================================================#
+# NDArrayBase.db
+# Database for NDArrayDriver base parameters (array info, pool stats)
+# Modeled after ADCore/ADApp/Db/NDArrayBase.template
+#
+# Macros:
+#   P     - PV name prefix
+#   R     - PV name suffix
+#=================================================================#
+
+#----- Detector Info -----
+
+record(stringin, "$(P)$(R)Manufacturer_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "Passive")
+    field(PINI, "YES")
+}
+
+record(stringin, "$(P)$(R)Model_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "Passive")
+    field(PINI, "YES")
+}
+
+record(stringin, "$(P)$(R)SerialNumber_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "Passive")
+    field(PINI, "YES")
+}
+
+record(stringin, "$(P)$(R)FirmwareVersion_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "Passive")
+    field(PINI, "YES")
+}
+
+record(stringin, "$(P)$(R)SDKVersion_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "Passive")
+    field(PINI, "YES")
+}
+
+#----- Array Info -----
+
+record(longin, "$(P)$(R)ArraySizeX_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longin, "$(P)$(R)ArraySizeY_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longin, "$(P)$(R)ArraySizeZ_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longin, "$(P)$(R)ArraySize_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longout, "$(P)$(R)ArrayCounter") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "0")
+}
+
+record(longin, "$(P)$(R)ArrayCounter_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longout, "$(P)$(R)ArrayCallbacks") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "1")
+}
+
+record(longin, "$(P)$(R)ArrayCallbacks_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longin, "$(P)$(R)NDimensions_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longout, "$(P)$(R)DataType") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "1")
+}
+
+record(longin, "$(P)$(R)DataType_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longout, "$(P)$(R)ColorMode") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "0")
+}
+
+record(longin, "$(P)$(R)ColorMode_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longin, "$(P)$(R)UniqueId_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+#----- Pool Statistics -----
+
+record(longin, "$(P)$(R)PoolMaxMem_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "5 second")
+}
+
+record(longin, "$(P)$(R)PoolUsedMem_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "5 second")
+}
+
+record(longin, "$(P)$(R)PoolAllocBuffers_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "5 second")
+}
+
+record(longin, "$(P)$(R)PoolFreeBuffers_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "5 second")
+}
+
+record(longin, "$(P)$(R)PoolMaxBuffers_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "5 second")
+}
+
+record(longout, "$(P)$(R)PoolPreAlloc") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "0")
+}
+
+record(longout, "$(P)$(R)PoolEmptyFreeList") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "0")
+}
+
+record(longin, "$(P)$(R)NumQueuedArrays_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "5 second")
+}
+
+#----- Attributes -----
+
+record(stringout, "$(P)$(R)NDAttributesFile") {
+    field(DTYP, "asynSimDetector")
+}
+
+record(longin, "$(P)$(R)NDAttributesStatus_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "5 second")
+}
+
+record(stringout, "$(P)$(R)NDAttributesMacros") {
+    field(DTYP, "asynSimDetector")
+}

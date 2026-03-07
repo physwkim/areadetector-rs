@@ -1,0 +1,170 @@
+#=================================================================#
+# NDFile.db
+# Database for NDArrayDriver file I/O parameters
+# Modeled after ADCore/ADApp/Db/NDFile.template
+#
+# Macros:
+#   P     - PV name prefix
+#   R     - PV name suffix
+#=================================================================#
+
+record(stringout, "$(P)$(R)FilePath") {
+    field(DTYP, "asynSimDetector")
+}
+
+record(stringin, "$(P)$(R)FilePath_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(stringout, "$(P)$(R)FileName") {
+    field(DTYP, "asynSimDetector")
+}
+
+record(stringin, "$(P)$(R)FileName_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longout, "$(P)$(R)FileNumber") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "1")
+}
+
+record(longin, "$(P)$(R)FileNumber_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(stringout, "$(P)$(R)FileTemplate") {
+    field(DTYP, "asynSimDetector")
+}
+
+record(stringin, "$(P)$(R)FileTemplate_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longout, "$(P)$(R)AutoIncrement") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "1")
+}
+
+record(longin, "$(P)$(R)AutoIncrement_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(stringin, "$(P)$(R)FullFileName_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longin, "$(P)$(R)FilePathExists_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longout, "$(P)$(R)WriteFile") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "0")
+}
+
+record(longin, "$(P)$(R)WriteFile_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longout, "$(P)$(R)ReadFile") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "0")
+}
+
+record(longin, "$(P)$(R)ReadFile_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longout, "$(P)$(R)FileWriteMode") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "0")
+}
+
+record(longin, "$(P)$(R)FileWriteMode_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longin, "$(P)$(R)FileWriteStatus_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(stringin, "$(P)$(R)FileWriteMessage_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longout, "$(P)$(R)NumCapture") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "1")
+}
+
+record(longin, "$(P)$(R)NumCapture_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longin, "$(P)$(R)NumCaptured_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longout, "$(P)$(R)Capture") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "0")
+}
+
+record(longin, "$(P)$(R)Capture_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longout, "$(P)$(R)DeleteDriverFile") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "0")
+}
+
+record(longin, "$(P)$(R)DeleteDriverFile_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longout, "$(P)$(R)LazyOpen") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "0")
+}
+
+record(longin, "$(P)$(R)LazyOpen_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longout, "$(P)$(R)CreateDir") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "0")
+}
+
+record(longin, "$(P)$(R)CreateDir_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(stringout, "$(P)$(R)TempSuffix") {
+    field(DTYP, "asynSimDetector")
+}
+
+record(stringin, "$(P)$(R)TempSuffix_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
