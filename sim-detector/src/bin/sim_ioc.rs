@@ -128,15 +128,21 @@ impl CommandHandler for ReportHandler {
 async fn main() -> CaResult<()> {
     let args: Vec<String> = std::env::args().collect();
 
+    // Set module paths as env vars (like C++ EPICS envPaths)
+    // Allows st.cmd to use: dbLoadRecords("$(SIM_DETECTOR)/Db/simDetector.db", ...)
+    unsafe {
+        std::env::set_var("SIM_DETECTOR", sim_detector::DB_DIR.trim_end_matches("/Db"));
+    }
+
     let script = if args.len() > 1 && !args[1].starts_with('-') {
         args[1].clone()
     } else {
         eprintln!("Usage: sim_ioc <st.cmd>");
         eprintln!();
         eprintln!("The st.cmd script should contain:");
-        eprintln!("  epicsEnvSet \"PREFIX\" \"SIM1:\"");
-        eprintln!("  simDetectorConfig \"SIM1\" 256 256 50000000");
-        eprintln!("  dbLoadRecords \"ioc/simDetector.db\" \"P=$(PREFIX),R=cam1:\"");
+        eprintln!(r#"  epicsEnvSet("PREFIX", "SIM1:")"#);
+        eprintln!(r#"  simDetectorConfig("SIM1", 256, 256, 50000000)"#);
+        eprintln!(r#"  dbLoadRecords("$(SIM_DETECTOR)/Db/simDetector.db", "P=$(PREFIX),R=cam1:")"#);
         std::process::exit(1);
     };
 
