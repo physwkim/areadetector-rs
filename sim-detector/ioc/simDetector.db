@@ -1,0 +1,309 @@
+#=================================================================#
+# simDetector.db
+# Database for the Rust sim-detector IOC
+# Modeled after ADSimDetector/simDetectorApp/Db/simDetector.template
+#=================================================================#
+
+#----- Acquisition Control -----
+
+record(longout, "$(P)$(R)Acquire") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "0")
+}
+
+record(longin, "$(P)$(R)Acquire_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longout, "$(P)$(R)ImageMode") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "2")
+}
+
+record(longin, "$(P)$(R)ImageMode_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longout, "$(P)$(R)NumImages") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "100")
+}
+
+record(longin, "$(P)$(R)NumImages_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(ao, "$(P)$(R)AcquireTime") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "4")
+    field(VAL,  "0.001")
+}
+
+record(ai, "$(P)$(R)AcquireTime_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "4")
+    field(SCAN, "1 second")
+}
+
+record(ao, "$(P)$(R)AcquirePeriod") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "4")
+    field(VAL,  "0.005")
+}
+
+record(ai, "$(P)$(R)AcquirePeriod_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "4")
+    field(SCAN, "1 second")
+}
+
+#----- Data Type & Color Mode -----
+
+record(longout, "$(P)$(R)DataType") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "1")
+}
+
+record(longin, "$(P)$(R)DataType_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longout, "$(P)$(R)ColorMode") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "0")
+}
+
+record(longin, "$(P)$(R)ColorMode_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+#----- Simulation Mode -----
+
+record(longout, "$(P)$(R)SimMode") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "0")
+}
+
+record(longin, "$(P)$(R)SimMode_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+#----- Gains -----
+
+record(ao, "$(P)$(R)Gain") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "2")
+    field(VAL,  "1")
+}
+
+record(ai, "$(P)$(R)Gain_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "2")
+    field(SCAN, "1 second")
+}
+
+record(ao, "$(P)$(R)GainX") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "2")
+    field(VAL,  "1")
+}
+
+record(ai, "$(P)$(R)GainX_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "2")
+    field(SCAN, "1 second")
+}
+
+record(ao, "$(P)$(R)GainY") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "2")
+    field(VAL,  "1")
+}
+
+record(ai, "$(P)$(R)GainY_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "2")
+    field(SCAN, "1 second")
+}
+
+record(ao, "$(P)$(R)GainRed") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "2")
+    field(VAL,  "1")
+}
+
+record(ai, "$(P)$(R)GainRed_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "2")
+    field(SCAN, "1 second")
+}
+
+record(ao, "$(P)$(R)GainGreen") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "2")
+    field(VAL,  "1")
+}
+
+record(ai, "$(P)$(R)GainGreen_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "2")
+    field(SCAN, "1 second")
+}
+
+record(ao, "$(P)$(R)GainBlue") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "2")
+    field(VAL,  "1")
+}
+
+record(ai, "$(P)$(R)GainBlue_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "2")
+    field(SCAN, "1 second")
+}
+
+#----- Offset & Noise -----
+
+record(ao, "$(P)$(R)Offset") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "1")
+    field(VAL,  "0")
+}
+
+record(ai, "$(P)$(R)Offset_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "1")
+    field(SCAN, "1 second")
+}
+
+record(ao, "$(P)$(R)Noise") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "1")
+    field(VAL,  "0")
+}
+
+record(ai, "$(P)$(R)Noise_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "1")
+    field(SCAN, "1 second")
+}
+
+#----- Peak Parameters -----
+
+record(longout, "$(P)$(R)PeakStartX") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "1")
+}
+
+record(longout, "$(P)$(R)PeakStartY") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "1")
+}
+
+record(longout, "$(P)$(R)PeakWidthX") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "10")
+}
+
+record(longout, "$(P)$(R)PeakWidthY") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "20")
+}
+
+record(longout, "$(P)$(R)PeakNumX") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "1")
+}
+
+record(longout, "$(P)$(R)PeakNumY") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "1")
+}
+
+record(longout, "$(P)$(R)PeakStepX") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "1")
+}
+
+record(longout, "$(P)$(R)PeakStepY") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "1")
+}
+
+record(ao, "$(P)$(R)PeakHeightVariation") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "2")
+    field(VAL,  "0")
+}
+
+record(longout, "$(P)$(R)ResetImage") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "0")
+}
+
+#----- Status Readbacks -----
+
+record(longin, "$(P)$(R)ArrayCounter_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longin, "$(P)$(R)NumImagesCounter_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longin, "$(P)$(R)Status_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(stringin, "$(P)$(R)StatusMessage_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longin, "$(P)$(R)MaxSizeX_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "Passive")
+    field(PINI, "YES")
+}
+
+record(longin, "$(P)$(R)MaxSizeY_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "Passive")
+    field(PINI, "YES")
+}
+
+record(longin, "$(P)$(R)ArraySizeX_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longin, "$(P)$(R)ArraySizeY_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longin, "$(P)$(R)ArraySizeZ_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(stringin, "$(P)$(R)Manufacturer_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "Passive")
+    field(PINI, "YES")
+}
+
+record(stringin, "$(P)$(R)Model_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "Passive")
+    field(PINI, "YES")
+}

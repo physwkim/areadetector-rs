@@ -4,11 +4,21 @@ version = "0.1.0"
 edition = "2021"
 description = "Simulated areaDetector driver for areadetector-rs"
 
+[features]
+ioc = ["dep:epics-base-rs", "dep:tokio"]
+
 [dependencies]
 ad-core = { path = "../ad-core" }
 asyn-rs = { path = "../../asyn-rs" }
 rand = "0.8"
 parking_lot = "0.12"
+epics-base-rs = { path = "../../epics-base-rs", optional = true }
+tokio = { version = "1", features = ["full"], optional = true }
+
+[[bin]]
+name = "sim_ioc"
+path = "src/bin/sim_ioc.rs"
+required-features = ["ioc"]
 
 [[example]]
 name = "demo"

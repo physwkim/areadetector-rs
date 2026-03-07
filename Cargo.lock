@@ -615,8 +615,10 @@ version = "0.1.0"
 dependencies = [
  "ad-core",
  "asyn-rs",
+ "epics-base-rs",
  "parking_lot",
  "rand",
+ "tokio",
 ]
 
 [[package]]
