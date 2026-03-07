@@ -7,14 +7,14 @@ use asyn_rs::port::{PortDriverBase, PortFlags};
 use crate::ndarray::NDArray;
 use crate::ndarray_pool::NDArrayPool;
 use crate::params::ndarray_driver::NDArrayDriverParams;
-use crate::plugin::NDPluginDriver;
+use crate::plugin::channel::{NDArrayOutput, NDArraySender};
 
 /// Base state for asynNDArrayDriver (file handling, attribute mgmt, pool).
 pub struct NDArrayDriverBase {
     pub port_base: PortDriverBase,
     pub params: NDArrayDriverParams,
     pub pool: Arc<NDArrayPool>,
-    plugins: Vec<Arc<dyn NDPluginDriver>>,
+    pub array_output: NDArrayOutput,
 }
 
 impl NDArrayDriverBase {
@@ -39,21 +39,21 @@ impl NDArrayDriverBase {
             port_base,
             params,
             pool,
-            plugins: Vec::new(),
+            array_output: NDArrayOutput::new(),
         })
     }
 
-    /// Register a plugin in the chain.
-    pub fn register_plugin(&mut self, plugin: Arc<dyn NDPluginDriver>) {
-        self.plugins.push(plugin);
+    /// Connect a downstream channel-based receiver.
+    pub fn connect_downstream(&mut self, sender: NDArraySender) {
+        self.array_output.add(sender);
     }
 
-    /// Number of registered plugins.
+    /// Number of connected downstream channels.
     pub fn num_plugins(&self) -> usize {
-        self.plugins.len()
+        self.array_output.num_senders()
     }
 
-    /// Publish an array: update counters, push to plugins.
+    /// Publish an array: update counters, push to plugins and channel outputs.
     pub fn publish_array(&mut self, array: Arc<NDArray>) -> AsynResult<()> {
         let counter = self.port_base.get_int32_param(self.params.array_counter, 0)? + 1;
         self.port_base
@@ -100,9 +100,7 @@ impl NDArrayDriverBase {
                 array.clone() as Arc<dyn std::any::Any + Send + Sync>,
             )?;
 
-            for plugin in &self.plugins {
-                plugin.push_array(array.clone());
-            }
+            self.array_output.publish(array);
         }
 
         self.port_base.call_param_callbacks(0)?;
@@ -145,6 +143,7 @@ impl NDArrayDriverBase {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::plugin::channel::ndarray_channel;
 
     #[test]
     fn test_new_sets_callbacks_enabled() {
@@ -153,20 +152,6 @@ mod tests {
             drv.port_base.get_int32_param(drv.params.array_callbacks, 0).unwrap(),
             1,
         );
-    }
-
-    #[test]
-    fn test_register_plugin() {
-        struct DummyPlugin;
-        impl NDPluginDriver for DummyPlugin {
-            fn name(&self) -> &str { "dummy" }
-            fn push_array(&self, _: Arc<NDArray>) {}
-        }
-
-        let mut drv = NDArrayDriverBase::new("TEST", 1_000_000).unwrap();
-        assert_eq!(drv.num_plugins(), 0);
-        drv.register_plugin(Arc::new(DummyPlugin));
-        assert_eq!(drv.num_plugins(), 1);
     }
 
     #[test]
@@ -225,5 +210,23 @@ mod tests {
         let mut drv = NDArrayDriverBase::new("TEST", 1_000_000).unwrap();
         drv.port_base.set_string_param(drv.params.file_path, 0, "/nonexistent_path_xyz".into()).unwrap();
         assert!(!drv.check_path().unwrap());
+    }
+
+    #[test]
+    fn test_connect_downstream() {
+        let mut drv = NDArrayDriverBase::new("TEST", 1_000_000).unwrap();
+        let (sender, mut receiver) = ndarray_channel("DOWNSTREAM", 10);
+        drv.connect_downstream(sender);
+        assert_eq!(drv.num_plugins(), 1);
+
+        let arr = drv.pool.alloc(
+            vec![crate::ndarray::NDDimension::new(8)],
+            crate::ndarray::NDDataType::UInt8,
+        ).unwrap();
+        let id = arr.unique_id;
+        drv.publish_array(Arc::new(arr)).unwrap();
+
+        let received = receiver.blocking_recv().unwrap();
+        assert_eq!(received.unique_id, id);
     }
 }

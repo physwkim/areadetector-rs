@@ -1,8 +1,11 @@
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use ad_core::error::{ADError, ADResult};
 use ad_core::ndarray::{NDArray, NDDataType};
-use ad_core::plugin::file_base::{NDFileMode, NDFileWriter};
+use ad_core::ndarray_pool::NDArrayPool;
+use ad_core::plugin::file_base::{NDFileMode, NDFileWriter, NDPluginFileBase};
+use ad_core::plugin::runtime::NDPluginProcess;
 
 /// JPEG file writer.
 /// Production version would use the `image` crate's JpegEncoder.
@@ -107,6 +110,44 @@ fn write_placeholder_jpeg(
     file.write_all(&[0xFF, 0xD9])?;
 
     Ok(())
+}
+
+/// JPEG file processor wrapping NDPluginFileBase + JpegWriter.
+pub struct JpegFileProcessor {
+    file_base: NDPluginFileBase,
+    writer: JpegWriter,
+}
+
+impl JpegFileProcessor {
+    pub fn new(quality: u8) -> Self {
+        Self {
+            file_base: NDPluginFileBase::new(),
+            writer: JpegWriter::new(quality),
+        }
+    }
+
+    pub fn file_base_mut(&mut self) -> &mut NDPluginFileBase {
+        &mut self.file_base
+    }
+}
+
+impl Default for JpegFileProcessor {
+    fn default() -> Self {
+        Self::new(90)
+    }
+}
+
+impl NDPluginProcess for JpegFileProcessor {
+    fn process_array(&mut self, array: &NDArray, _pool: &NDArrayPool) -> Vec<Arc<NDArray>> {
+        let _ = self
+            .file_base
+            .process_array(Arc::new(array.clone()), &mut self.writer);
+        vec![] // file plugins are sinks
+    }
+
+    fn plugin_type(&self) -> &str {
+        "NDFileJPEG"
+    }
 }
 
 #[cfg(test)]

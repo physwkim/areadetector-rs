@@ -5,11 +5,13 @@ use ad_core::params::ADBaseParams;
 use asyn_rs::error::AsynResult;
 use asyn_rs::param::ParamType;
 use asyn_rs::port::PortDriverBase;
+use asyn_rs::port_handle::PortHandle;
 
 use crate::compute::{Gains, PeakParams, SineParams, SineWave};
 use crate::types::{SimMode, SineOperation};
 
 /// SimDetector-specific parameter indices.
+#[derive(Clone, Copy)]
 pub struct SimDetectorParams {
     pub gain: usize,
     pub gain_x: usize,
@@ -111,6 +113,84 @@ pub struct SimConfigSnapshot {
 }
 
 impl SimConfigSnapshot {
+    /// Read config via PortHandle (blocking). For use from the acquisition task thread.
+    pub fn read_via_handle(
+        handle: &PortHandle,
+        ad: &ADBaseParams,
+        sim: &SimDetectorParams,
+    ) -> AsynResult<Self> {
+        let dt_ord = handle.read_int32_blocking(ad.base.data_type, 0)? as u8;
+        let data_type = NDDataType::from_ordinal(dt_ord).unwrap_or(NDDataType::UInt8);
+
+        let cm = handle.read_int32_blocking(ad.base.color_mode, 0)?;
+        let color_mode = match cm {
+            2 => ColorMode::RGB1,
+            _ => ColorMode::Mono,
+        };
+
+        Ok(Self {
+            sim_mode: SimMode::from_i32(handle.read_int32_blocking(sim.sim_mode, 0)?),
+            gains: Gains {
+                gain: handle.read_float64_blocking(sim.gain, 0)?,
+                gain_x: handle.read_float64_blocking(sim.gain_x, 0)?,
+                gain_y: handle.read_float64_blocking(sim.gain_y, 0)?,
+                gain_red: handle.read_float64_blocking(sim.gain_red, 0)?,
+                gain_green: handle.read_float64_blocking(sim.gain_green, 0)?,
+                gain_blue: handle.read_float64_blocking(sim.gain_blue, 0)?,
+            },
+            peak: PeakParams {
+                start_x: handle.read_int32_blocking(sim.peak_start_x, 0)?,
+                start_y: handle.read_int32_blocking(sim.peak_start_y, 0)?,
+                width_x: handle.read_int32_blocking(sim.peak_width_x, 0)?,
+                width_y: handle.read_int32_blocking(sim.peak_width_y, 0)?,
+                num_x: handle.read_int32_blocking(sim.peak_num_x, 0)?,
+                num_y: handle.read_int32_blocking(sim.peak_num_y, 0)?,
+                step_x: handle.read_int32_blocking(sim.peak_step_x, 0)?,
+                step_y: handle.read_int32_blocking(sim.peak_step_y, 0)?,
+                height_variation: handle.read_float64_blocking(sim.peak_height_variation, 0)?,
+            },
+            sine: SineParams {
+                x_sine1: SineWave {
+                    amplitude: handle.read_float64_blocking(sim.x_sine1_amplitude, 0)?,
+                    frequency: handle.read_float64_blocking(sim.x_sine1_frequency, 0)?,
+                    phase: handle.read_float64_blocking(sim.x_sine1_phase, 0)?,
+                },
+                x_sine2: SineWave {
+                    amplitude: handle.read_float64_blocking(sim.x_sine2_amplitude, 0)?,
+                    frequency: handle.read_float64_blocking(sim.x_sine2_frequency, 0)?,
+                    phase: handle.read_float64_blocking(sim.x_sine2_phase, 0)?,
+                },
+                y_sine1: SineWave {
+                    amplitude: handle.read_float64_blocking(sim.y_sine1_amplitude, 0)?,
+                    frequency: handle.read_float64_blocking(sim.y_sine1_frequency, 0)?,
+                    phase: handle.read_float64_blocking(sim.y_sine1_phase, 0)?,
+                },
+                y_sine2: SineWave {
+                    amplitude: handle.read_float64_blocking(sim.y_sine2_amplitude, 0)?,
+                    frequency: handle.read_float64_blocking(sim.y_sine2_frequency, 0)?,
+                    phase: handle.read_float64_blocking(sim.y_sine2_phase, 0)?,
+                },
+                x_op: SineOperation::from_i32(handle.read_int32_blocking(sim.x_sine_operation, 0)?),
+                y_op: SineOperation::from_i32(handle.read_int32_blocking(sim.y_sine_operation, 0)?),
+            },
+            offset: handle.read_float64_blocking(sim.offset, 0)?,
+            noise: handle.read_float64_blocking(sim.noise, 0)?,
+            data_type,
+            color_mode,
+            max_size_x: handle.read_int32_blocking(ad.max_size_x, 0)? as usize,
+            max_size_y: handle.read_int32_blocking(ad.max_size_y, 0)? as usize,
+            size_x: handle.read_int32_blocking(ad.size_x, 0)? as usize,
+            size_y: handle.read_int32_blocking(ad.size_y, 0)? as usize,
+            min_x: handle.read_int32_blocking(ad.min_x, 0).unwrap_or(0) as usize,
+            min_y: handle.read_int32_blocking(ad.min_y, 0).unwrap_or(0) as usize,
+            acquire_time: handle.read_float64_blocking(ad.acquire_time, 0)?,
+            acquire_period: handle.read_float64_blocking(ad.acquire_period, 0)?,
+            image_mode: ImageMode::from_i32(handle.read_int32_blocking(ad.image_mode, 0)?),
+            num_images: handle.read_int32_blocking(ad.num_images, 0)?,
+            array_callbacks: handle.read_int32_blocking(ad.base.array_callbacks, 0)? != 0,
+        })
+    }
+
     pub fn read_from(
         base: &PortDriverBase,
         ad: &ADBaseParams,

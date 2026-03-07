@@ -1,4 +1,8 @@
+use std::sync::Arc;
+
 use ad_core::ndarray::{NDArray, NDDataBuffer};
+use ad_core::ndarray_pool::NDArrayPool;
+use ad_core::plugin::runtime::NDPluginProcess;
 
 /// Shape to draw.
 #[derive(Debug, Clone)]
@@ -91,6 +95,28 @@ pub fn draw_overlays(src: &NDArray, overlays: &[OverlayDef]) -> NDArray {
     }
 
     arr
+}
+
+/// Pure overlay processing logic.
+pub struct OverlayProcessor {
+    overlays: Vec<OverlayDef>,
+}
+
+impl OverlayProcessor {
+    pub fn new(overlays: Vec<OverlayDef>) -> Self {
+        Self { overlays }
+    }
+}
+
+impl NDPluginProcess for OverlayProcessor {
+    fn process_array(&mut self, array: &NDArray, _pool: &NDArrayPool) -> Vec<Arc<NDArray>> {
+        let out = draw_overlays(array, &self.overlays);
+        vec![Arc::new(out)]
+    }
+
+    fn plugin_type(&self) -> &str {
+        "NDPluginOverlay"
+    }
 }
 
 #[cfg(test)]

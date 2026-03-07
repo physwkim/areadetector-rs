@@ -1,4 +1,8 @@
+use std::sync::Arc;
+
 use ad_core::ndarray::{NDArray, NDDataBuffer, NDDimension};
+use ad_core::ndarray_pool::NDArrayPool;
+use ad_core::plugin::runtime::NDPluginProcess;
 
 /// Transform types matching C++ NDPluginTransform.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -101,6 +105,30 @@ pub fn apply_transform(src: &NDArray, transform: TransformType) -> NDArray {
     arr.timestamp = src.timestamp;
     arr.attributes = src.attributes.clone();
     arr
+}
+
+// --- New TransformProcessor (NDPluginProcess-based) ---
+
+/// Pure transform processing logic.
+pub struct TransformProcessor {
+    transform: TransformType,
+}
+
+impl TransformProcessor {
+    pub fn new(transform: TransformType) -> Self {
+        Self { transform }
+    }
+}
+
+impl NDPluginProcess for TransformProcessor {
+    fn process_array(&mut self, array: &NDArray, _pool: &NDArrayPool) -> Vec<Arc<NDArray>> {
+        let out = apply_transform(array, self.transform);
+        vec![Arc::new(out)]
+    }
+
+    fn plugin_type(&self) -> &str {
+        "NDPluginTransform"
+    }
 }
 
 #[cfg(test)]
@@ -221,5 +249,20 @@ mod tests {
         assert_eq!(get_u8(&r4), get_u8(&arr));
         assert_eq!(r4.dims[0].size, arr.dims[0].size);
         assert_eq!(r4.dims[1].size, arr.dims[1].size);
+    }
+
+    // --- New TransformProcessor tests ---
+
+    #[test]
+    fn test_transform_processor() {
+        let mut proc = TransformProcessor::new(TransformType::Rot90CW);
+        let pool = NDArrayPool::new(1_000_000);
+
+        let arr = make_3x2();
+        let outputs = proc.process_array(&arr, &pool);
+        assert_eq!(outputs.len(), 1);
+        assert_eq!(outputs[0].dims[0].size, 2); // swapped
+        assert_eq!(outputs[0].dims[1].size, 3);
+        assert_eq!(get_u8(&outputs[0]), &[4, 1, 5, 2, 6, 3]);
     }
 }

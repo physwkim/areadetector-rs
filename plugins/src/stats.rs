@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
 use ad_core::ndarray::{NDArray, NDDataBuffer};
+use ad_core::ndarray_pool::NDArrayPool;
 use ad_core::plugin::base::PluginWorker;
+use ad_core::plugin::runtime::{NDPluginProcess, PluginParamSnapshot, PluginRuntimeHandle};
 use ad_core::plugin::{DropPolicy, NDPluginDriver};
 use parking_lot::Mutex;
 use tokio::sync::mpsc;
@@ -116,6 +118,8 @@ pub fn compute_centroid(data: &NDDataBuffer, x_size: usize, y_size: usize) -> (f
     (cx, cy, sx, sy)
 }
 
+// --- Legacy StatsPlugin (PluginWorker-based) ---
+
 /// Stats plugin: computes min/max/mean/sigma/total + centroid for each array.
 pub struct StatsPlugin {
     name: String,
@@ -169,6 +173,77 @@ impl NDPluginDriver for StatsPlugin {
     fn push_array(&self, array: Arc<NDArray>) {
         self.worker.push(array, DropPolicy::DropNewest);
     }
+}
+
+// --- New StatsProcessor (NDPluginProcess-based) ---
+
+/// Pure processing logic for statistics computation.
+pub struct StatsProcessor {
+    latest_stats: Arc<Mutex<StatsResult>>,
+    compute_centroid: bool,
+}
+
+impl StatsProcessor {
+    pub fn new() -> Self {
+        Self {
+            latest_stats: Arc::new(Mutex::new(StatsResult::default())),
+            compute_centroid: true,
+        }
+    }
+
+    /// Get a cloneable handle to the latest stats.
+    pub fn stats_handle(&self) -> Arc<Mutex<StatsResult>> {
+        self.latest_stats.clone()
+    }
+}
+
+impl Default for StatsProcessor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl NDPluginProcess for StatsProcessor {
+    fn process_array(&mut self, array: &NDArray, _pool: &NDArrayPool) -> Vec<Arc<NDArray>> {
+        let mut result = compute_stats(&array.data);
+        if self.compute_centroid {
+            let info = array.info();
+            if info.color_size == 1 && array.dims.len() >= 2 {
+                let (cx, cy, sx, sy) = compute_centroid(
+                    &array.data, info.x_size, info.y_size,
+                );
+                result.centroid_x = cx;
+                result.centroid_y = cy;
+                result.sigma_x = sx;
+                result.sigma_y = sy;
+            }
+        }
+        *self.latest_stats.lock() = result;
+        vec![] // sink: no output arrays
+    }
+
+    fn plugin_type(&self) -> &str {
+        "NDPluginStats"
+    }
+}
+
+/// Create a stats plugin runtime. Returns the handle and a cloneable stats accessor.
+pub fn create_stats_runtime(
+    port_name: &str,
+    pool: Arc<NDArrayPool>,
+    queue_size: usize,
+) -> (PluginRuntimeHandle, Arc<Mutex<StatsResult>>, std::thread::JoinHandle<()>) {
+    let processor = StatsProcessor::new();
+    let stats_handle = processor.stats_handle();
+
+    let (plugin_handle, data_jh) = ad_core::plugin::runtime::create_plugin_runtime(
+        port_name,
+        processor,
+        pool,
+        queue_size,
+    );
+
+    (plugin_handle, stats_handle, data_jh)
 }
 
 #[cfg(test)]
@@ -251,6 +326,8 @@ mod tests {
         assert!((cy - 0.0).abs() < 1e-10);
     }
 
+    // --- Legacy StatsPlugin tests ---
+
     #[test]
     fn test_stats_plugin_end_to_end() {
         let (tx, _rx) = mpsc::channel(16);
@@ -268,5 +345,51 @@ mod tests {
         assert_eq!(stats.min, 10.0);
         assert_eq!(stats.max, 40.0);
         assert_eq!(stats.mean, 25.0);
+    }
+
+    // --- New StatsProcessor tests ---
+
+    #[test]
+    fn test_stats_processor_direct() {
+        let mut proc = StatsProcessor::new();
+        let pool = NDArrayPool::new(1_000_000);
+
+        let mut arr = NDArray::new(vec![NDDimension::new(5)], NDDataType::UInt8);
+        if let NDDataBuffer::U8(ref mut v) = arr.data {
+            v[0] = 10; v[1] = 20; v[2] = 30; v[3] = 40; v[4] = 50;
+        }
+
+        let outputs = proc.process_array(&arr, &pool);
+        assert!(outputs.is_empty(), "stats is a sink");
+
+        let stats = proc.stats_handle().lock().clone();
+        assert_eq!(stats.min, 10.0);
+        assert_eq!(stats.max, 50.0);
+        assert_eq!(stats.mean, 30.0);
+    }
+
+    #[test]
+    fn test_stats_runtime_end_to_end() {
+        let pool = Arc::new(NDArrayPool::new(1_000_000));
+        let (handle, stats, _jh) = create_stats_runtime("STATS_RT", pool, 10);
+
+        let mut arr = NDArray::new(
+            vec![NDDimension::new(4), NDDimension::new(4)],
+            NDDataType::UInt8,
+        );
+        if let NDDataBuffer::U8(ref mut v) = arr.data {
+            for (i, val) in v.iter_mut().enumerate() {
+                *val = (i + 1) as u8;
+            }
+        }
+
+        handle.array_sender().send(Arc::new(arr));
+        std::thread::sleep(std::time::Duration::from_millis(100));
+
+        let result = stats.lock().clone();
+        assert_eq!(result.min, 1.0);
+        assert_eq!(result.max, 16.0);
+        assert_eq!(result.num_elements, 16);
+        assert!(result.centroid_x > 0.0, "centroid should be computed for 2D");
     }
 }

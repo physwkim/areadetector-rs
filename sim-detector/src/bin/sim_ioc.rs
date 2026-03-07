@@ -11,24 +11,29 @@
 
 use std::sync::Arc;
 
+use asyn_rs::port_handle::PortHandle;
 use epics_base_rs::error::CaResult;
 use epics_base_rs::server::ioc_app::IocApplication;
 use epics_base_rs::server::iocsh::registry::*;
 
-use sim_detector::ioc_support::{build_param_registry, SimDeviceSupport};
-use sim_detector::SimDetector;
+use ad_core::plugin::channel::NDArrayOutput;
+use sim_detector::driver::{create_sim_detector, SimDetectorRuntime};
+use sim_detector::ioc_support::{build_param_registry_from_params, SimDeviceSupport};
 
 /// Shared state between simDetectorConfig command and device support factory.
 struct DriverHolder {
-    driver: std::sync::Mutex<Option<Arc<parking_lot::Mutex<SimDetector>>>>,
+    port_handle: std::sync::Mutex<Option<PortHandle>>,
     registry: std::sync::Mutex<Option<Arc<sim_detector::ioc_support::ParamRegistry>>>,
+    /// Keep runtime alive to prevent shutdown
+    _runtime: std::sync::Mutex<Option<SimDetectorRuntime>>,
 }
 
 impl DriverHolder {
     fn new() -> Arc<Self> {
         Arc::new(Self {
-            driver: std::sync::Mutex::new(None),
+            port_handle: std::sync::Mutex::new(None),
             registry: std::sync::Mutex::new(None),
+            _runtime: std::sync::Mutex::new(None),
         })
     }
 }
@@ -59,15 +64,16 @@ impl CommandHandler for SimDetectorConfigHandler {
 
         println!("simDetectorConfig: port={port_name}, size={size_x}x{size_y}, maxMemory={max_memory}");
 
-        let det = SimDetector::new(&port_name, size_x, size_y, max_memory)
+        let array_output = NDArrayOutput::new();
+        let runtime = create_sim_detector(&port_name, size_x, size_y, max_memory, array_output)
             .map_err(|e| format!("failed to create SimDetector: {e}"))?;
 
-        let registry = Arc::new(build_param_registry(&det));
-        let driver = Arc::new(parking_lot::Mutex::new(det));
-        SimDetector::start_thread(driver.clone());
+        let registry = Arc::new(build_param_registry_from_params(&runtime.ad_params, &runtime.sim_params));
+        let port_handle = runtime.port_handle().clone();
 
-        *self.holder.driver.lock().unwrap() = Some(driver);
+        *self.holder.port_handle.lock().unwrap() = Some(port_handle);
         *self.holder.registry.lock().unwrap() = Some(registry);
+        *self.holder._runtime.lock().unwrap() = Some(runtime);
 
         Ok(CommandOutcome::Continue)
     }
@@ -80,46 +86,13 @@ struct ReportHandler {
 
 impl CommandHandler for ReportHandler {
     fn call(&self, _args: &[ArgValue], _ctx: &CommandContext) -> CommandResult {
-        let guard = self.holder.driver.lock().unwrap();
-        let driver = match guard.as_ref() {
-            Some(d) => d,
-            None => {
-                println!("No SimDetector configured");
-                return Ok(CommandOutcome::Continue);
-            }
-        };
+        let guard = self.holder.port_handle.lock().unwrap();
+        if guard.is_none() {
+            println!("No SimDetector configured");
+            return Ok(CommandOutcome::Continue);
+        }
 
-        let d = driver.lock();
-        let base = &d.ad.port_base;
-        let ad = &d.ad.params;
-        let sim = &d.sim_params;
-
-        let acquire = base.get_int32_param(ad.acquire, 0).unwrap_or(0);
-        let counter = base.get_int32_param(ad.base.array_counter, 0).unwrap_or(0);
-        let size_x = base.get_int32_param(ad.max_size_x, 0).unwrap_or(0);
-        let size_y = base.get_int32_param(ad.max_size_y, 0).unwrap_or(0);
-        let mode = base.get_int32_param(sim.sim_mode, 0).unwrap_or(0);
-        let image_mode = base.get_int32_param(ad.image_mode, 0).unwrap_or(0);
-        let status = base.get_int32_param(ad.status, 0).unwrap_or(0);
-
-        let mode_str = match mode {
-            0 => "LinearRamp", 1 => "Peaks", 2 => "Sine", 3 => "OffsetNoise", _ => "Unknown",
-        };
-        let image_mode_str = match image_mode {
-            0 => "Single", 1 => "Multiple", 2 => "Continuous", _ => "Unknown",
-        };
-        let status_str = match status {
-            0 => "Idle", 1 => "Acquire", _ => "Unknown",
-        };
-
-        println!("SimDetector Report");
-        println!("  Size:         {}x{}", size_x, size_y);
-        println!("  SimMode:      {} ({})", mode, mode_str);
-        println!("  ImageMode:    {} ({})", image_mode, image_mode_str);
-        println!("  Acquire:      {}", acquire);
-        println!("  Status:       {} ({})", status, status_str);
-        println!("  ArrayCounter: {}", counter);
-
+        println!("SimDetector Report (PortHandle-based, use record reads for status)");
         Ok(CommandOutcome::Continue)
     }
 }
@@ -174,7 +147,7 @@ async fn main() -> CaResult<()> {
         ))
         // Device support: wired during iocInit (Phase 2)
         .register_device_support("asynSimDetector", move || {
-            let driver = holder_for_factory.driver.lock().unwrap()
+            let handle = holder_for_factory.port_handle.lock().unwrap()
                 .as_ref()
                 .expect("simDetectorConfig must be called before iocInit")
                 .clone();
@@ -182,7 +155,7 @@ async fn main() -> CaResult<()> {
                 .as_ref()
                 .expect("simDetectorConfig must be called before iocInit")
                 .clone();
-            Box::new(SimDeviceSupport::new(driver, registry))
+            Box::new(SimDeviceSupport::from_handle(handle, registry))
         })
         // Phase 3: interactive shell commands
         .register_shell_command(CommandDef::new(

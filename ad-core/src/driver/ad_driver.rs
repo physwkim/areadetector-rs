@@ -7,7 +7,7 @@ use crate::color::NDColorMode;
 use crate::ndarray::NDArray;
 use crate::ndarray_pool::NDArrayPool;
 use crate::params::ad_driver::ADDriverParams;
-use crate::plugin::NDPluginDriver;
+use crate::plugin::channel::{NDArrayOutput, NDArraySender};
 
 use super::{ADStatus, ImageMode, ShutterMode};
 
@@ -16,7 +16,7 @@ pub struct ADDriverBase {
     pub port_base: PortDriverBase,
     pub params: ADDriverParams,
     pub pool: Arc<NDArrayPool>,
-    plugins: Vec<Arc<dyn NDPluginDriver>>,
+    pub array_output: NDArrayOutput,
 }
 
 impl ADDriverBase {
@@ -66,16 +66,16 @@ impl ADDriverBase {
             port_base,
             params,
             pool,
-            plugins: Vec::new(),
+            array_output: NDArrayOutput::new(),
         })
     }
 
-    /// Register a plugin in the chain.
-    pub fn register_plugin(&mut self, plugin: Arc<dyn NDPluginDriver>) {
-        self.plugins.push(plugin);
+    /// Connect a downstream channel-based receiver.
+    pub fn connect_downstream(&mut self, sender: NDArraySender) {
+        self.array_output.add(sender);
     }
 
-    /// Publish an array: update counters, push to plugins, set GenericPointer, fire callbacks.
+    /// Publish an array: update counters, push to plugins and channel outputs, fire callbacks.
     pub fn publish_array(&mut self, array: Arc<NDArray>) -> AsynResult<()> {
         let counter = self.port_base.get_int32_param(self.params.base.array_counter, 0)? + 1;
         self.port_base
@@ -109,9 +109,7 @@ impl ADDriverBase {
                 array.clone() as Arc<dyn std::any::Any + Send + Sync>,
             )?;
 
-            for plugin in &self.plugins {
-                plugin.push_array(array.clone());
-            }
+            self.array_output.publish(array);
         }
 
         self.port_base.call_param_callbacks(0)?;
@@ -209,22 +207,12 @@ mod tests {
     }
 
     #[test]
-    fn test_publish_array_skips_plugins_when_callbacks_disabled() {
-        use std::sync::atomic::{AtomicU32, Ordering};
-
-        struct CountPlugin {
-            count: AtomicU32,
-        }
-        impl NDPluginDriver for CountPlugin {
-            fn name(&self) -> &str { "count" }
-            fn push_array(&self, _array: Arc<NDArray>) {
-                self.count.fetch_add(1, Ordering::Relaxed);
-            }
-        }
+    fn test_publish_array_skips_output_when_callbacks_disabled() {
+        use crate::plugin::channel::ndarray_channel;
 
         let mut ad = ADDriverBase::new("TEST", 64, 64, 1_000_000).unwrap();
-        let plugin = Arc::new(CountPlugin { count: AtomicU32::new(0) });
-        ad.register_plugin(plugin.clone());
+        let (sender, _receiver) = ndarray_channel("DOWNSTREAM", 10);
+        ad.connect_downstream(sender);
 
         ad.port_base
             .set_int32_param(ad.params.base.array_callbacks, 0, 0)
@@ -242,7 +230,15 @@ mod tests {
             .unwrap();
         ad.publish_array(Arc::new(arr)).unwrap();
 
-        assert_eq!(plugin.count.load(Ordering::Relaxed), 0);
+        // Counter still increments, but generic pointer should NOT be set
+        assert_eq!(
+            ad.port_base.get_int32_param(ad.params.base.array_counter, 0).unwrap(),
+            1
+        );
+        // Generic pointer should still be None since callbacks were disabled
+        assert!(
+            ad.port_base.get_generic_pointer_param(ad.params.base.ndarray_data, 0).is_err()
+        );
     }
 
     #[test]
@@ -322,5 +318,30 @@ mod tests {
             ad.port_base.get_float64_param(ad.params.temperature, 0).unwrap(),
             25.0
         );
+    }
+
+    #[test]
+    fn test_connect_downstream() {
+        use crate::plugin::channel::ndarray_channel;
+
+        let mut ad = ADDriverBase::new("TEST", 8, 8, 1_000_000).unwrap();
+        let (sender, mut receiver) = ndarray_channel("DOWNSTREAM", 10);
+        ad.connect_downstream(sender);
+
+        let arr = ad
+            .pool
+            .alloc(
+                vec![
+                    crate::ndarray::NDDimension::new(8),
+                    crate::ndarray::NDDimension::new(8),
+                ],
+                crate::ndarray::NDDataType::UInt8,
+            )
+            .unwrap();
+        let id = arr.unique_id;
+        ad.publish_array(Arc::new(arr)).unwrap();
+
+        let received = receiver.blocking_recv().unwrap();
+        assert_eq!(received.unique_id, id);
     }
 }

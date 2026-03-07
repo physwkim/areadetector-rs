@@ -1,8 +1,11 @@
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use ad_core::error::{ADError, ADResult};
 use ad_core::ndarray::{NDArray, NDDataBuffer, NDDataType, NDDimension};
-use ad_core::plugin::file_base::{NDFileMode, NDFileWriter};
+use ad_core::ndarray_pool::NDArrayPool;
+use ad_core::plugin::file_base::{NDFileMode, NDFileWriter, NDPluginFileBase};
+use ad_core::plugin::runtime::NDPluginProcess;
 
 /// HDF5 file writer.
 /// This is a stub implementation that writes binary data in a simple format.
@@ -127,6 +130,44 @@ impl NDFileWriter for Hdf5Writer {
 
     fn supports_multiple_arrays(&self) -> bool {
         true
+    }
+}
+
+/// HDF5 file processor wrapping NDPluginFileBase + Hdf5Writer.
+pub struct Hdf5FileProcessor {
+    file_base: NDPluginFileBase,
+    writer: Hdf5Writer,
+}
+
+impl Hdf5FileProcessor {
+    pub fn new() -> Self {
+        Self {
+            file_base: NDPluginFileBase::new(),
+            writer: Hdf5Writer::new(),
+        }
+    }
+
+    pub fn file_base_mut(&mut self) -> &mut NDPluginFileBase {
+        &mut self.file_base
+    }
+}
+
+impl Default for Hdf5FileProcessor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl NDPluginProcess for Hdf5FileProcessor {
+    fn process_array(&mut self, array: &NDArray, _pool: &NDArrayPool) -> Vec<Arc<NDArray>> {
+        let _ = self
+            .file_base
+            .process_array(Arc::new(array.clone()), &mut self.writer);
+        vec![] // file plugins are sinks
+    }
+
+    fn plugin_type(&self) -> &str {
+        "NDFileHDF5"
     }
 }
 

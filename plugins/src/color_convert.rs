@@ -2,7 +2,9 @@ use std::sync::Arc;
 
 use ad_core::color::{self, NDColorMode, NDBayerPattern};
 use ad_core::ndarray::{NDArray, NDDataBuffer, NDDataType, NDDimension};
+use ad_core::ndarray_pool::NDArrayPool;
 use ad_core::plugin::base::PluginWorker;
+use ad_core::plugin::runtime::NDPluginProcess;
 use ad_core::plugin::{DropPolicy, NDPluginDriver};
 use parking_lot::Mutex;
 
@@ -207,6 +209,46 @@ impl NDPluginDriver for ColorConvertPlugin {
     }
 }
 
+// --- New ColorConvertProcessor (NDPluginProcess-based) ---
+
+/// Pure color conversion processing logic.
+pub struct ColorConvertProcessor {
+    config: ColorConvertConfig,
+}
+
+impl ColorConvertProcessor {
+    pub fn new(config: ColorConvertConfig) -> Self {
+        Self { config }
+    }
+}
+
+impl NDPluginProcess for ColorConvertProcessor {
+    fn process_array(&mut self, array: &NDArray, _pool: &NDArrayPool) -> Vec<Arc<NDArray>> {
+        let result = match self.config.target_mode {
+            NDColorMode::Mono => color::rgb1_to_mono(array).ok(),
+            NDColorMode::RGB1 => {
+                if array.dims.len() == 2 {
+                    bayer_to_rgb1(array, self.config.bayer_pattern)
+                        .or_else(|| color::mono_to_rgb1(array).ok())
+                } else {
+                    color::convert_rgb_layout(
+                        array, NDColorMode::RGB2, NDColorMode::RGB1,
+                    ).ok()
+                }
+            }
+            _ => None,
+        };
+        match result {
+            Some(out) => vec![Arc::new(out)],
+            None => vec![],
+        }
+    }
+
+    fn plugin_type(&self) -> &str {
+        "NDPluginColorConvert"
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -251,5 +293,29 @@ mod tests {
 
         let out = plugin.latest_output().unwrap();
         assert_eq!(out.dims[0].size, 3);
+    }
+
+    // --- New ColorConvertProcessor tests ---
+
+    #[test]
+    fn test_color_convert_processor_bayer() {
+        let config = ColorConvertConfig {
+            target_mode: NDColorMode::RGB1,
+            bayer_pattern: NDBayerPattern::RGGB,
+        };
+        let mut proc = ColorConvertProcessor::new(config);
+        let pool = NDArrayPool::new(1_000_000);
+
+        let mut arr = NDArray::new(
+            vec![NDDimension::new(4), NDDimension::new(4)],
+            NDDataType::UInt8,
+        );
+        if let NDDataBuffer::U8(ref mut v) = arr.data {
+            for i in 0..16 { v[i] = 128; }
+        }
+
+        let outputs = proc.process_array(&arr, &pool);
+        assert_eq!(outputs.len(), 1);
+        assert_eq!(outputs[0].dims[0].size, 3); // RGB color dim
     }
 }

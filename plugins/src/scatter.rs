@@ -2,6 +2,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use ad_core::ndarray::NDArray;
+use ad_core::ndarray_pool::NDArrayPool;
+use ad_core::plugin::runtime::NDPluginProcess;
 use ad_core::plugin::NDPluginDriver;
 
 /// Scatter plugin: distributes arrays round-robin to N output plugins.
@@ -34,6 +36,32 @@ impl NDPluginDriver for ScatterPlugin {
         }
         let idx = self.next_output.fetch_add(1, Ordering::Relaxed) % self.outputs.len();
         self.outputs[idx].push_array(array);
+    }
+}
+
+/// Scatter processor: passes through arrays. Round-robin is handled by NDArrayOutput
+/// with multiple senders wired downstream.
+pub struct ScatterProcessor;
+
+impl ScatterProcessor {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl Default for ScatterProcessor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl NDPluginProcess for ScatterProcessor {
+    fn process_array(&mut self, array: &NDArray, _pool: &NDArrayPool) -> Vec<Arc<NDArray>> {
+        vec![Arc::new(array.clone())]
+    }
+
+    fn plugin_type(&self) -> &str {
+        "NDPluginScatter"
     }
 }
 

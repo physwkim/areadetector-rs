@@ -2,6 +2,8 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 
 use ad_core::ndarray::NDArray;
+use ad_core::ndarray_pool::NDArrayPool;
+use ad_core::plugin::runtime::NDPluginProcess;
 
 /// Trigger condition for circular buffer.
 #[derive(Debug, Clone)]
@@ -101,6 +103,44 @@ impl CircularBuffer {
         self.captured.clear();
         self.triggered = false;
         self.post_remaining = 0;
+    }
+}
+
+// --- New CircularBuffProcessor (NDPluginProcess-based) ---
+
+/// CircularBuff processor: maintains ring buffer state, emits captured arrays on trigger.
+pub struct CircularBuffProcessor {
+    buffer: CircularBuffer,
+}
+
+impl CircularBuffProcessor {
+    pub fn new(pre_count: usize, post_count: usize, condition: TriggerCondition) -> Self {
+        Self {
+            buffer: CircularBuffer::new(pre_count, post_count, condition),
+        }
+    }
+
+    pub fn trigger(&mut self) {
+        self.buffer.trigger();
+    }
+
+    pub fn buffer(&self) -> &CircularBuffer {
+        &self.buffer
+    }
+}
+
+impl NDPluginProcess for CircularBuffProcessor {
+    fn process_array(&mut self, array: &NDArray, _pool: &NDArrayPool) -> Vec<Arc<NDArray>> {
+        let done = self.buffer.push(Arc::new(array.clone()));
+        if done {
+            self.buffer.take_captured()
+        } else {
+            vec![]
+        }
+    }
+
+    fn plugin_type(&self) -> &str {
+        "NDPluginCircularBuff"
     }
 }
 

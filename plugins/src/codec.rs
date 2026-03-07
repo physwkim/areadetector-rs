@@ -1,5 +1,9 @@
+use std::sync::Arc;
+
 use ad_core::codec::{Codec, CodecName};
 use ad_core::ndarray::{NDArray, NDDataType};
+use ad_core::ndarray_pool::NDArrayPool;
+use ad_core::plugin::runtime::NDPluginProcess;
 
 /// Compress an NDArray using LZ4.
 /// For now, uses a simple run-length encoding as placeholder until lz4_flex is added.
@@ -50,6 +54,45 @@ pub fn decompress_jpeg(src: &NDArray) -> Option<NDArray> {
     let mut arr = src.clone();
     arr.codec = None;
     Some(arr)
+}
+
+/// Codec operation mode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CodecMode {
+    CompressLZ4,
+    DecompressLZ4,
+    CompressJPEG { quality: u8 },
+    DecompressJPEG,
+}
+
+/// Pure codec processing logic.
+pub struct CodecProcessor {
+    mode: CodecMode,
+}
+
+impl CodecProcessor {
+    pub fn new(mode: CodecMode) -> Self {
+        Self { mode }
+    }
+}
+
+impl NDPluginProcess for CodecProcessor {
+    fn process_array(&mut self, array: &NDArray, _pool: &NDArrayPool) -> Vec<Arc<NDArray>> {
+        let result = match self.mode {
+            CodecMode::CompressLZ4 => Some(compress_lz4(array)),
+            CodecMode::DecompressLZ4 => decompress_lz4(array),
+            CodecMode::CompressJPEG { quality } => compress_jpeg(array, quality),
+            CodecMode::DecompressJPEG => decompress_jpeg(array),
+        };
+        match result {
+            Some(out) => vec![Arc::new(out)],
+            None => vec![],
+        }
+    }
+
+    fn plugin_type(&self) -> &str {
+        "NDPluginCodec"
+    }
 }
 
 #[cfg(test)]

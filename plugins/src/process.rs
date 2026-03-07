@@ -1,4 +1,8 @@
+use std::sync::Arc;
+
 use ad_core::ndarray::{NDArray, NDDataBuffer, NDDataType};
+use ad_core::ndarray_pool::NDArrayPool;
+use ad_core::plugin::runtime::NDPluginProcess;
 
 /// Process plugin operations applied sequentially to an NDArray.
 #[derive(Debug, Clone)]
@@ -155,6 +159,40 @@ impl ProcessState {
     }
 }
 
+// --- New ProcessProcessor (NDPluginProcess-based) ---
+
+/// ProcessProcessor wraps existing ProcessState.
+pub struct ProcessProcessor {
+    state: ProcessState,
+}
+
+impl ProcessProcessor {
+    pub fn new(config: ProcessConfig) -> Self {
+        Self {
+            state: ProcessState::new(config),
+        }
+    }
+
+    pub fn state(&self) -> &ProcessState {
+        &self.state
+    }
+
+    pub fn state_mut(&mut self) -> &mut ProcessState {
+        &mut self.state
+    }
+}
+
+impl NDPluginProcess for ProcessProcessor {
+    fn process_array(&mut self, array: &NDArray, _pool: &NDArrayPool) -> Vec<Arc<NDArray>> {
+        let out = self.state.process(array);
+        vec![Arc::new(out)]
+    }
+
+    fn plugin_type(&self) -> &str {
+        "NDPluginProcess"
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -277,5 +315,25 @@ mod tests {
 
         let result = state.process(&input);
         assert_eq!(result.data.data_type(), NDDataType::Float64);
+    }
+
+    // --- New ProcessProcessor tests ---
+
+    #[test]
+    fn test_process_processor() {
+        let mut proc = ProcessProcessor::new(ProcessConfig {
+            enable_offset_scale: true,
+            scale: 2.0,
+            offset: 1.0,
+            ..Default::default()
+        });
+        let pool = NDArrayPool::new(1_000_000);
+
+        let input = make_array(&[10, 20, 30]);
+        let outputs = proc.process_array(&input, &pool);
+        assert_eq!(outputs.len(), 1);
+        if let NDDataBuffer::U8(ref v) = outputs[0].data {
+            assert_eq!(v[0], 21); // 10*2+1
+        }
     }
 }

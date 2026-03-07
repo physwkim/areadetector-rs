@@ -1,4 +1,8 @@
+use std::sync::Arc;
+
 use ad_core::ndarray::{NDArray, NDDataBuffer, NDDataType, NDDimension};
+use ad_core::ndarray_pool::NDArrayPool;
+use ad_core::plugin::runtime::NDPluginProcess;
 
 /// Compute 1D FFT magnitude for each row of a 2D array.
 /// Returns a Float64 array with the same dimensions.
@@ -72,6 +76,41 @@ pub fn fft_2d(src: &NDArray) -> Option<NDArray> {
     arr.unique_id = src.unique_id;
     arr.timestamp = src.timestamp;
     Some(arr)
+}
+
+/// FFT mode selection.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FFTMode {
+    Rows1D,
+    Full2D,
+}
+
+/// Pure FFT processing logic.
+pub struct FFTProcessor {
+    mode: FFTMode,
+}
+
+impl FFTProcessor {
+    pub fn new(mode: FFTMode) -> Self {
+        Self { mode }
+    }
+}
+
+impl NDPluginProcess for FFTProcessor {
+    fn process_array(&mut self, array: &NDArray, _pool: &NDArrayPool) -> Vec<Arc<NDArray>> {
+        let result = match self.mode {
+            FFTMode::Rows1D => fft_1d_rows(array),
+            FFTMode::Full2D => fft_2d(array),
+        };
+        match result {
+            Some(out) => vec![Arc::new(out)],
+            None => vec![],
+        }
+    }
+
+    fn plugin_type(&self) -> &str {
+        "NDPluginFFT"
+    }
 }
 
 #[cfg(test)]

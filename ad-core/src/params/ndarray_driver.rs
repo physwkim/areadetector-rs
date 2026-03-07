@@ -3,6 +3,7 @@ use asyn_rs::param::ParamType;
 use asyn_rs::port::PortDriverBase;
 
 /// Parameters for asynNDArrayDriver base (file I/O, pool stats, array info, attributes).
+#[derive(Clone, Copy)]
 pub struct NDArrayDriverParams {
     // Detector info (Octet)
     pub manufacturer: usize,

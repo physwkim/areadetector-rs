@@ -10,7 +10,7 @@ pub mod task;
 #[cfg(feature = "ioc")]
 pub mod ioc_support;
 
-pub use driver::SimDetector;
+pub use driver::{SimDetector, SimDetectorRuntime, create_sim_detector};
 
 /// Path to this crate's Db/ directory (set at compile time).
 /// Use in st.cmd as: `dbLoadRecords("$(SIM_DETECTOR)/Db/simDetector.db", ...)`

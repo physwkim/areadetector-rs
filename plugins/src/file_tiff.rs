@@ -1,8 +1,11 @@
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use ad_core::error::{ADError, ADResult};
 use ad_core::ndarray::{NDArray, NDDataType, NDDimension};
-use ad_core::plugin::file_base::{NDFileMode, NDFileWriter};
+use ad_core::ndarray_pool::NDArrayPool;
+use ad_core::plugin::file_base::{NDFileMode, NDFileWriter, NDPluginFileBase};
+use ad_core::plugin::runtime::NDPluginProcess;
 
 /// TIFF file writer.
 /// Production version would use the `image` crate's TiffEncoder.
@@ -101,6 +104,44 @@ fn write_ifd_entry(file: &mut std::fs::File, tag: u16, dtype: u16, count: u32, v
     file.write_all(&count.to_le_bytes())?;
     file.write_all(&value.to_le_bytes())?;
     Ok(())
+}
+
+/// TIFF file processor wrapping NDPluginFileBase + TiffWriter.
+pub struct TiffFileProcessor {
+    file_base: NDPluginFileBase,
+    writer: TiffWriter,
+}
+
+impl TiffFileProcessor {
+    pub fn new() -> Self {
+        Self {
+            file_base: NDPluginFileBase::new(),
+            writer: TiffWriter::new(),
+        }
+    }
+
+    pub fn file_base_mut(&mut self) -> &mut NDPluginFileBase {
+        &mut self.file_base
+    }
+}
+
+impl Default for TiffFileProcessor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl NDPluginProcess for TiffFileProcessor {
+    fn process_array(&mut self, array: &NDArray, _pool: &NDArrayPool) -> Vec<Arc<NDArray>> {
+        let _ = self
+            .file_base
+            .process_array(Arc::new(array.clone()), &mut self.writer);
+        vec![] // file plugins are sinks
+    }
+
+    fn plugin_type(&self) -> &str {
+        "NDFileTIFF"
+    }
 }
 
 #[cfg(test)]

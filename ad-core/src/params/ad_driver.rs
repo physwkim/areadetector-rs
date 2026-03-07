@@ -5,6 +5,7 @@ use asyn_rs::port::PortDriverBase;
 use super::ndarray_driver::NDArrayDriverParams;
 
 /// Additional parameters for ADDriver (detector-specific: gain, shutter, temperature, trigger).
+#[derive(Clone, Copy)]
 pub struct ADDriverParams {
     pub base: NDArrayDriverParams,
 

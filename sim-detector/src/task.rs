@@ -1,28 +1,28 @@
-use std::sync::{Arc, Condvar, Mutex};
-use std::time::Instant;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
+use asyn_rs::port_handle::PortHandle;
+
 use ad_core::driver::{ADStatus, ImageMode};
 use ad_core::ndarray::{NDArray, NDDataBuffer};
+use ad_core::params::ADBaseParams;
+use ad_core::plugin::channel::NDArrayOutput;
 
 use crate::color_layout::ColorLayout;
 use crate::compute::{self, SineState};
-use crate::driver::SimDetector;
-use crate::params::SimConfigSnapshot;
+use crate::params::{SimConfigSnapshot, SimDetectorParams};
 use crate::roi::crop_roi;
 use crate::types::DirtyFlags;
 
 const MIN_DELAY_SECS: f64 = 1e-5;
 
-/// Cached param indices to avoid borrow conflicts with port_base.
-struct ParamIndices {
-    status: usize,
-    status_message: usize,
-    acquire: usize,
-    num_images_counter: usize,
-    array_counter: usize,
+/// Commands sent from the driver to the acquisition task.
+pub enum AcqCommand {
+    Start,
+    Stop,
 }
 
 struct TaskState {
@@ -103,249 +103,195 @@ impl TaskState {
     }
 }
 
-fn wait_for_signal(signal: &Arc<(Mutex<bool>, Condvar)>) {
-    let (lock, cvar) = &**signal;
-    let mut flag = lock.lock().unwrap();
-    while !*flag {
-        flag = cvar.wait(flag).unwrap();
-    }
-    *flag = false;
-}
-
-fn wait_for_signal_timeout(signal: &Arc<(Mutex<bool>, Condvar)>, duration: std::time::Duration) -> bool {
-    let (lock, cvar) = &**signal;
-    let mut flag = lock.lock().unwrap();
-    if *flag {
-        *flag = false;
-        return true;
-    }
-    let result = cvar.wait_timeout(flag, duration).unwrap();
-    flag = result.0;
-    if *flag {
-        *flag = false;
-        true
-    } else {
-        false
+/// Check if a Stop command has been received within the given duration.
+fn wait_for_stop(acq_rx: &std::sync::mpsc::Receiver<AcqCommand>, duration: Duration) -> bool {
+    match acq_rx.recv_timeout(duration) {
+        Ok(AcqCommand::Stop) => true,
+        Ok(AcqCommand::Start) => false, // stale start, ignore
+        Err(std::sync::mpsc::RecvTimeoutError::Timeout) => false,
+        Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => true,
     }
 }
 
-pub fn start_acquisition_thread(driver: Arc<parking_lot::Mutex<SimDetector>>) {
-    let start_signal;
-    let stop_signal;
-    let pi;
-    {
-        let drv = driver.lock();
-        start_signal = drv.start_signal.clone();
-        stop_signal = drv.stop_signal.clone();
-        pi = ParamIndices {
-            status: drv.ad.params.status,
-            status_message: drv.ad.params.status_message,
-            acquire: drv.ad.params.acquire,
-            num_images_counter: drv.ad.params.num_images_counter,
-            array_counter: drv.ad.params.base.array_counter,
-        };
-    }
-
+/// Start the acquisition task thread.
+///
+/// The task reads config via `PortHandle` (blocking), computes frames,
+/// and publishes via `NDArrayOutput`. Dirty flags are shared with the driver
+/// via `Arc<parking_lot::Mutex<DirtyFlags>>`.
+pub fn start_acquisition_task(
+    acq_rx: std::sync::mpsc::Receiver<AcqCommand>,
+    port_handle: PortHandle,
+    array_output: NDArrayOutput,
+    dirty: Arc<parking_lot::Mutex<DirtyFlags>>,
+    ad_params: ADBaseParams,
+    sim_params: SimDetectorParams,
+) -> std::thread::JoinHandle<()> {
     std::thread::Builder::new()
         .name("SimDetTask".into())
         .spawn(move || {
-            let mut task_state = TaskState::new();
+            acquisition_loop(acq_rx, port_handle, array_output, dirty, ad_params, sim_params);
+        })
+        .expect("failed to spawn SimDetTask thread")
+}
 
-            loop {
-                wait_for_signal(&start_signal);
+fn acquisition_loop(
+    acq_rx: std::sync::mpsc::Receiver<AcqCommand>,
+    port_handle: PortHandle,
+    array_output: NDArrayOutput,
+    dirty: Arc<parking_lot::Mutex<DirtyFlags>>,
+    ad: ADBaseParams,
+    sim: SimDetectorParams,
+) {
+    let mut task_state = TaskState::new();
 
-                // Initialize counters
-                {
-                    let mut drv = driver.lock();
-                    drv.ad.port_base.set_int32_param(pi.num_images_counter, 0, 0).ok();
-                    drv.ad.port_base.set_int32_param(pi.status, 0, ADStatus::Acquire as i32).ok();
-                    drv.ad.port_base.call_param_callbacks(0).ok();
-                }
+    loop {
+        // Wait for Start command
+        match acq_rx.recv() {
+            Ok(AcqCommand::Start) => {}
+            Ok(AcqCommand::Stop) => continue, // stale stop, ignore
+            Err(_) => break,                  // channel closed = shutdown
+        }
 
-                loop {
-                    let start_time = Instant::now();
+        // Initialize counters via PortHandle
+        let _ = port_handle.write_int32_blocking(ad.num_images_counter, 0, 0);
+        let _ = port_handle.write_int32_blocking(ad.status, 0, ADStatus::Acquire as i32);
 
-                    let (config, dirty) = {
-                        let mut drv = driver.lock();
-                        let config = SimConfigSnapshot::read_from(
-                            &drv.ad.port_base,
-                            &drv.ad.params,
-                            &drv.sim_params,
-                        );
-                        let dirty = drv.dirty.take();
-                        match config {
-                            Ok(cfg) => (cfg, dirty),
-                            Err(_) => break,
-                        }
-                    };
+        let mut num_counter = 0;
 
-                    let reset = dirty.any();
-                    task_state.apply_dirty(&dirty, &config);
+        loop {
+            let start_time = Instant::now();
 
-                    let mut frame = task_state.compute_frame(&config, reset);
+            // Read config via PortHandle
+            let config = match SimConfigSnapshot::read_via_handle(&port_handle, &ad, &sim) {
+                Ok(cfg) => cfg,
+                Err(_) => break,
+            };
 
-                    // Exposure time sleep with stop interruption
-                    let elapsed = start_time.elapsed().as_secs_f64();
-                    let delay = (config.acquire_time - elapsed).max(MIN_DELAY_SECS);
-                    if wait_for_signal_timeout(
-                        &stop_signal,
-                        std::time::Duration::from_secs_f64(delay),
-                    ) {
-                        let mut drv = driver.lock();
-                        drv.ad.port_base.set_int32_param(pi.status, 0, ADStatus::Idle as i32).ok();
-                        drv.ad.port_base.set_int32_param(pi.acquire, 0, 0).ok();
-                        drv.ad.port_base.call_param_callbacks(0).ok();
-                        break;
-                    }
+            // Take dirty flags (shared with driver)
+            let dirty_flags = dirty.lock().take();
+            let reset = dirty_flags.any();
+            task_state.apply_dirty(&dirty_flags, &config);
 
-                    // Publish frame
-                    let should_stop = {
-                        let mut drv = driver.lock();
+            let mut frame = task_state.compute_frame(&config, reset);
 
-                        let counter = drv.ad.port_base.get_int32_param(pi.array_counter, 0).unwrap_or(0);
-                        let num_counter = drv.ad.port_base.get_int32_param(pi.num_images_counter, 0).unwrap_or(0) + 1;
-                        drv.ad.port_base.set_int32_param(pi.num_images_counter, 0, num_counter).ok();
+            // Exposure time sleep with stop interruption
+            let elapsed = start_time.elapsed().as_secs_f64();
+            let delay = (config.acquire_time - elapsed).max(MIN_DELAY_SECS);
+            if wait_for_stop(&acq_rx, Duration::from_secs_f64(delay)) {
+                // External stop received
+                let _ = port_handle.write_int32_blocking(ad.status, 0, ADStatus::Idle as i32);
+                let _ = port_handle.write_int32_blocking(ad.acquire, 0, 0);
+                break;
+            }
 
-                        frame.unique_id = counter + 1;
-                        frame.timestamp = ad_core::timestamp::EpicsTimestamp::now();
+            // Update counters
+            num_counter += 1;
+            let counter = port_handle.read_int32_blocking(ad.base.array_counter, 0).unwrap_or(0);
 
-                        drv.ad.publish_array(Arc::new(frame)).ok();
+            frame.unique_id = counter + 1;
+            frame.timestamp = ad_core::timestamp::EpicsTimestamp::now();
 
-                        let image_mode = config.image_mode;
-                        let num_images = config.num_images;
-                        if image_mode == ImageMode::Single
-                            || (image_mode == ImageMode::Multiple && num_counter >= num_images)
-                        {
-                            drv.ad.port_base.set_int32_param(pi.status, 0, ADStatus::Idle as i32).ok();
-                            drv.ad.port_base.set_int32_param(pi.acquire, 0, 0).ok();
-                            drv.ad.port_base.set_string_param(pi.status_message, 0, "Waiting for acquisition".into()).ok();
-                            drv.ad.port_base.call_param_callbacks(0).ok();
-                            true
-                        } else {
-                            false
-                        }
-                    };
+            // Publish via NDArrayOutput (updates array_counter via the output path)
+            // We need to update array_counter on the driver too
+            let _ = port_handle.write_int32_blocking(ad.base.array_counter, 0, counter + 1);
+            let _ = port_handle.write_int32_blocking(ad.num_images_counter, 0, num_counter);
 
-                    if should_stop {
-                        break;
-                    }
+            array_output.publish(Arc::new(frame));
 
-                    // Period delay with stop interruption
-                    let total_elapsed = start_time.elapsed().as_secs_f64();
-                    let period_delay = config.acquire_period - total_elapsed;
-                    if period_delay > 0.0 {
-                        if wait_for_signal_timeout(
-                            &stop_signal,
-                            std::time::Duration::from_secs_f64(period_delay),
-                        ) {
-                            let mut drv = driver.lock();
-                            drv.ad.port_base.set_int32_param(pi.status, 0, ADStatus::Idle as i32).ok();
-                            drv.ad.port_base.set_int32_param(pi.acquire, 0, 0).ok();
-                            drv.ad.port_base.call_param_callbacks(0).ok();
-                            break;
-                        }
-                    }
+            // Check stop conditions
+            let image_mode = config.image_mode;
+            let num_images = config.num_images;
+            if image_mode == ImageMode::Single
+                || (image_mode == ImageMode::Multiple && num_counter >= num_images)
+            {
+                let _ = port_handle.write_int32_blocking(ad.status, 0, ADStatus::Idle as i32);
+                let _ = port_handle.write_int32_blocking(ad.acquire, 0, 0);
+                break;
+            }
+
+            // Period delay with stop interruption
+            let total_elapsed = start_time.elapsed().as_secs_f64();
+            let period_delay = config.acquire_period - total_elapsed;
+            if period_delay > 0.0 {
+                if wait_for_stop(&acq_rx, Duration::from_secs_f64(period_delay)) {
+                    let _ = port_handle.write_int32_blocking(ad.status, 0, ADStatus::Idle as i32);
+                    let _ = port_handle.write_int32_blocking(ad.acquire, 0, 0);
+                    break;
                 }
             }
-        })
-        .expect("failed to spawn SimDetTask thread");
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::driver::SimDetector;
-    use asyn_rs::port::PortDriver;
-    use asyn_rs::user::AsynUser;
+    use crate::driver::create_sim_detector;
+    use ad_core::plugin::channel::NDArrayOutput;
 
     #[test]
     fn test_single_mode_auto_stop() {
-        let mut det = SimDetector::new("SIM_TEST", 32, 32, 1_000_000).unwrap();
-        det.ad.port_base.set_int32_param(det.ad.params.image_mode, 0, ImageMode::Single as i32).unwrap();
-        det.ad.port_base.set_float64_param(det.ad.params.acquire_time, 0, 0.001).unwrap();
-        det.ad.port_base.set_float64_param(det.ad.params.acquire_period, 0, 0.001).unwrap();
+        let rt = create_sim_detector("SIM_TEST", 32, 32, 1_000_000, NDArrayOutput::new()).unwrap();
+        let handle = rt.port_handle();
 
-        let driver = Arc::new(parking_lot::Mutex::new(det));
-        SimDetector::start_thread(driver.clone());
+        handle.write_int32_blocking(rt.ad_params.image_mode, 0, ImageMode::Single as i32).unwrap();
+        handle.write_float64_blocking(rt.ad_params.acquire_time, 0, 0.001).unwrap();
+        handle.write_float64_blocking(rt.ad_params.acquire_period, 0, 0.001).unwrap();
 
-        {
-            let mut drv = driver.lock();
-            let reason = drv.ad.params.acquire;
-            let mut user = AsynUser::new(reason);
-            drv.write_int32(&mut user, 1).unwrap();
-        }
+        // Start acquisition
+        handle.write_int32_blocking(rt.ad_params.acquire, 0, 1).unwrap();
 
         std::thread::sleep(std::time::Duration::from_millis(200));
 
-        let drv = driver.lock();
-        let acquire = drv.ad.port_base.get_int32_param(drv.ad.params.acquire, 0).unwrap();
+        let acquire = handle.read_int32_blocking(rt.ad_params.acquire, 0).unwrap();
         assert_eq!(acquire, 0, "acquire should be 0 after Single mode completes");
-        let counter = drv.ad.port_base.get_int32_param(drv.ad.params.base.array_counter, 0).unwrap();
+        let counter = handle.read_int32_blocking(rt.ad_params.base.array_counter, 0).unwrap();
         assert!(counter >= 1, "should have produced at least 1 frame");
     }
 
     #[test]
     fn test_continuous_mode_produces_frames() {
-        let mut det = SimDetector::new("SIM_CONT", 16, 16, 1_000_000).unwrap();
-        det.ad.port_base.set_int32_param(det.ad.params.image_mode, 0, ImageMode::Continuous as i32).unwrap();
-        det.ad.port_base.set_float64_param(det.ad.params.acquire_time, 0, 0.001).unwrap();
-        det.ad.port_base.set_float64_param(det.ad.params.acquire_period, 0, 0.002).unwrap();
+        let rt = create_sim_detector("SIM_CONT", 16, 16, 1_000_000, NDArrayOutput::new()).unwrap();
+        let handle = rt.port_handle();
 
-        let driver = Arc::new(parking_lot::Mutex::new(det));
-        SimDetector::start_thread(driver.clone());
+        handle.write_int32_blocking(rt.ad_params.image_mode, 0, ImageMode::Continuous as i32).unwrap();
+        handle.write_float64_blocking(rt.ad_params.acquire_time, 0, 0.001).unwrap();
+        handle.write_float64_blocking(rt.ad_params.acquire_period, 0, 0.002).unwrap();
 
-        {
-            let mut drv = driver.lock();
-            let reason = drv.ad.params.acquire;
-            let mut user = AsynUser::new(reason);
-            drv.write_int32(&mut user, 1).unwrap();
-        }
+        // Start acquisition
+        handle.write_int32_blocking(rt.ad_params.acquire, 0, 1).unwrap();
 
         std::thread::sleep(std::time::Duration::from_millis(100));
 
-        {
-            let mut drv = driver.lock();
-            let reason = drv.ad.params.acquire;
-            let mut user = AsynUser::new(reason);
-            drv.write_int32(&mut user, 0).unwrap();
-        }
+        // Stop acquisition
+        handle.write_int32_blocking(rt.ad_params.acquire, 0, 0).unwrap();
 
         std::thread::sleep(std::time::Duration::from_millis(50));
 
-        let drv = driver.lock();
-        let counter = drv.ad.port_base.get_int32_param(drv.ad.params.base.array_counter, 0).unwrap();
+        let counter = handle.read_int32_blocking(rt.ad_params.base.array_counter, 0).unwrap();
         assert!(counter >= 2, "should have produced multiple frames, got {}", counter);
     }
 
     #[test]
     fn test_stop_during_acquisition() {
-        let mut det = SimDetector::new("SIM_STOP", 8, 8, 1_000_000).unwrap();
-        det.ad.port_base.set_int32_param(det.ad.params.image_mode, 0, ImageMode::Continuous as i32).unwrap();
-        det.ad.port_base.set_float64_param(det.ad.params.acquire_time, 0, 0.5).unwrap();
-        det.ad.port_base.set_float64_param(det.ad.params.acquire_period, 0, 1.0).unwrap();
+        let rt = create_sim_detector("SIM_STOP", 8, 8, 1_000_000, NDArrayOutput::new()).unwrap();
+        let handle = rt.port_handle();
 
-        let driver = Arc::new(parking_lot::Mutex::new(det));
-        SimDetector::start_thread(driver.clone());
+        handle.write_int32_blocking(rt.ad_params.image_mode, 0, ImageMode::Continuous as i32).unwrap();
+        handle.write_float64_blocking(rt.ad_params.acquire_time, 0, 0.5).unwrap();
+        handle.write_float64_blocking(rt.ad_params.acquire_period, 0, 1.0).unwrap();
 
-        {
-            let mut drv = driver.lock();
-            let reason = drv.ad.params.acquire;
-            let mut user = AsynUser::new(reason);
-            drv.write_int32(&mut user, 1).unwrap();
-        }
+        // Start acquisition
+        handle.write_int32_blocking(rt.ad_params.acquire, 0, 1).unwrap();
 
         std::thread::sleep(std::time::Duration::from_millis(50));
-        {
-            let mut drv = driver.lock();
-            let reason = drv.ad.params.acquire;
-            let mut user = AsynUser::new(reason);
-            drv.write_int32(&mut user, 0).unwrap();
-        }
+
+        // Stop during long exposure
+        handle.write_int32_blocking(rt.ad_params.acquire, 0, 0).unwrap();
 
         std::thread::sleep(std::time::Duration::from_millis(100));
 
-        let drv = driver.lock();
-        let acquire = drv.ad.port_base.get_int32_param(drv.ad.params.acquire, 0).unwrap();
+        let acquire = handle.read_int32_blocking(rt.ad_params.acquire, 0).unwrap();
         assert_eq!(acquire, 0);
     }
 }

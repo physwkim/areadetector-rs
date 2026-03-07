@@ -1,9 +1,11 @@
 use std::sync::atomic::{AtomicI32, AtomicU32, AtomicU64, Ordering};
+use std::sync::Arc;
 
 use parking_lot::Mutex;
 
 use crate::error::{ADError, ADResult};
 use crate::ndarray::{NDArray, NDDataBuffer, NDDataType, NDDimension};
+use crate::ndarray_handle::{NDArrayHandle, pooled_array};
 use crate::timestamp::EpicsTimestamp;
 
 /// NDArray factory with free-list reuse and memory tracking.
@@ -172,6 +174,17 @@ impl NDArrayPool {
 
     pub fn max_memory(&self) -> usize {
         self.max_memory
+    }
+
+    /// Allocate an NDArray wrapped in a pool-aware handle.
+    /// On final drop, the array is returned to this pool's free list.
+    pub fn alloc_handle(
+        pool: &Arc<Self>,
+        dims: Vec<NDDimension>,
+        data_type: NDDataType,
+    ) -> ADResult<NDArrayHandle> {
+        let array = pool.alloc(dims, data_type)?;
+        Ok(pooled_array(array, pool))
     }
 }
 

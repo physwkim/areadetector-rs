@@ -1,8 +1,10 @@
 use std::sync::Arc;
 
 use ad_core::ndarray::NDArray;
-use ad_core::plugin::{DropPolicy, NDPluginDriver};
+use ad_core::ndarray_pool::NDArrayPool;
 use ad_core::plugin::base::PluginWorker;
+use ad_core::plugin::runtime::NDPluginProcess;
+use ad_core::plugin::{DropPolicy, NDPluginDriver};
 use parking_lot::Mutex;
 
 /// Gather plugin: subscribes to multiple source ports and merges arrays into a single stream.
@@ -51,6 +53,38 @@ impl NDPluginDriver for GatherPlugin {
     fn name(&self) -> &str { &self.name }
     fn push_array(&self, array: Arc<NDArray>) {
         self.worker.push(array, DropPolicy::DropNewest);
+    }
+}
+
+/// Pure gather processing logic (passthrough — gathers from multiple senders into one stream).
+pub struct GatherProcessor {
+    count: u64,
+}
+
+impl GatherProcessor {
+    pub fn new() -> Self {
+        Self { count: 0 }
+    }
+
+    pub fn total_received(&self) -> u64 {
+        self.count
+    }
+}
+
+impl Default for GatherProcessor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl NDPluginProcess for GatherProcessor {
+    fn process_array(&mut self, array: &NDArray, _pool: &NDArrayPool) -> Vec<Arc<NDArray>> {
+        self.count += 1;
+        vec![Arc::new(array.clone())]
+    }
+
+    fn plugin_type(&self) -> &str {
+        "NDPluginGather"
     }
 }
 

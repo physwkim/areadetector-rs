@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
 use ad_core::ndarray::{NDArray, NDDataBuffer, NDDataType, NDDimension};
+use ad_core::ndarray_pool::NDArrayPool;
 use ad_core::plugin::base::PluginWorker;
+use ad_core::plugin::runtime::NDPluginProcess;
 use ad_core::plugin::{DropPolicy, NDPluginDriver};
 use parking_lot::Mutex;
 
@@ -186,6 +188,32 @@ impl NDPluginDriver for ROIPlugin {
     }
 }
 
+// --- New ROIProcessor (NDPluginProcess-based) ---
+
+/// Pure ROI processing logic.
+pub struct ROIProcessor {
+    config: ROIConfig,
+}
+
+impl ROIProcessor {
+    pub fn new(config: ROIConfig) -> Self {
+        Self { config }
+    }
+}
+
+impl NDPluginProcess for ROIProcessor {
+    fn process_array(&mut self, array: &NDArray, _pool: &NDArrayPool) -> Vec<Arc<NDArray>> {
+        match extract_roi_2d(array, &self.config) {
+            Some(roi_arr) => vec![Arc::new(roi_arr)],
+            None => vec![],
+        }
+    }
+
+    fn plugin_type(&self) -> &str {
+        "NDPluginROI"
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -291,5 +319,23 @@ mod tests {
 
         let roi = extract_roi_2d(&arr, &config).unwrap();
         assert_eq!(roi.data.data_type(), NDDataType::UInt16);
+    }
+
+    // --- New ROIProcessor tests ---
+
+    #[test]
+    fn test_roi_processor() {
+        let mut config = ROIConfig::default();
+        config.dims[0] = ROIDimConfig { min: 1, size: 2, bin: 1, reverse: false, enable: true };
+        config.dims[1] = ROIDimConfig { min: 1, size: 2, bin: 1, reverse: false, enable: true };
+
+        let mut proc = ROIProcessor::new(config);
+        let pool = NDArrayPool::new(1_000_000);
+
+        let arr = make_4x4_u8();
+        let outputs = proc.process_array(&arr, &pool);
+        assert_eq!(outputs.len(), 1);
+        assert_eq!(outputs[0].dims[0].size, 2);
+        assert_eq!(outputs[0].dims[1].size, 2);
     }
 }
