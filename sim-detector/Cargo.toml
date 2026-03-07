@@ -1,0 +1,15 @@
+[package]
+name = "sim-detector"
+version = "0.1.0"
+edition = "2021"
+description = "Simulated areaDetector driver for areadetector-rs"
+
+[dependencies]
+ad-core = { path = "../ad-core" }
+asyn-rs = { path = "../../asyn-rs" }
+rand = "0.8"
+parking_lot = "0.12"
+
+[[example]]
+name = "demo"
+path = "examples/demo.rs"

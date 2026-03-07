@@ -1,0 +1,3 @@
+[workspace]
+members = ["ad-core", "plugins", "sim-detector"]
+resolver = "2"
