@@ -5,7 +5,7 @@ edition = "2021"
 description = "Simulated areaDetector driver for areadetector-rs"
 
 [features]
-ioc = ["dep:epics-base-rs", "dep:tokio"]
+ioc = ["dep:epics-base-rs", "dep:tokio", "asyn-rs/epics"]
 
 [dependencies]
 ad-core = { path = "../ad-core" }

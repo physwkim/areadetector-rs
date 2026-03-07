@@ -172,6 +172,7 @@ impl DeviceSupport for SimDeviceSupport {
         let suffix = name.rsplit(':').next().unwrap_or(name);
         if let Some(info) = self.registry.get(suffix) {
             self.inner.set_drv_info(&info.drv_info);
+            self.inner.set_reason(info.param_index);
             let iface = match info.param_type {
                 ParamType::Int32 => "asynInt32",
                 ParamType::Float64 => "asynFloat64",

@@ -89,6 +89,7 @@ name = "asyn-rs"
 version = "0.2.1"
 dependencies = [
  "bitflags",
+ "epics-base-rs",
  "libc",
  "parking_lot",
  "serde",
