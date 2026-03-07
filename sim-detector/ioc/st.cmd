@@ -19,7 +19,7 @@ simDetectorConfig("SIM1", 256, 256, 50000000)
 
 # Load the detector database
 # Path is relative to working directory (typically the workspace root)
-dbLoadRecords("sim-detector/ioc/simDetector.db", "P=$(PREFIX),R=$(CAM)")
+dbLoadRecords("sim-detector/Db/simDetector.db", "P=$(PREFIX),R=$(CAM)")
 
 # iocInit is called automatically by IocApplication after this script completes.
 iocInit()
