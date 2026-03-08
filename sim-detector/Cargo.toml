@@ -5,10 +5,11 @@ edition = "2021"
 description = "Simulated areaDetector driver for areadetector-rs"
 
 [features]
-ioc = ["dep:epics-base-rs", "dep:tokio", "asyn-rs/epics"]
+ioc = ["dep:epics-base-rs", "dep:tokio", "dep:ad-plugins", "asyn-rs/epics"]
 
 [dependencies]
 ad-core = { path = "../ad-core" }
+ad-plugins = { path = "../plugins", optional = true }
 asyn-rs = { path = "../../asyn-rs" }
 rand = "0.8"
 parking_lot = "0.12"

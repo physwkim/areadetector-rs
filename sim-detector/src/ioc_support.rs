@@ -89,6 +89,7 @@ pub fn build_param_registry_from_params(ad: &ADBaseParams, sim: &SimDetectorPara
     map.insert("AcquirePeriod_RBV".into(), ParamInfo::float64(ad.acquire_period, "ACQUIRE_PERIOD"));
     map.insert("TimeRemaining_RBV".into(), ParamInfo::float64(ad.time_remaining, "TIME_REMAINING"));
     map.insert("Status_RBV".into(), ParamInfo::int32(ad.status, "DETECTOR_STATE"));
+    map.insert("DetectorState_RBV".into(), ParamInfo::int32(ad.status, "DETECTOR_STATE"));
     map.insert("StatusMessage_RBV".into(), ParamInfo::string(ad.status_message, "STATUS_MESSAGE"));
     map.insert("AcquireBusy".into(), ParamInfo::int32(ad.acquire_busy, "ACQUIRE_BUSY"));
     map.insert("AcquireBusy_RBV".into(), ParamInfo::int32(ad.acquire_busy, "ACQUIRE_BUSY"));
@@ -108,6 +109,7 @@ pub fn build_param_registry_from_params(ad: &ADBaseParams, sim: &SimDetectorPara
     map.insert("ShutterControl_RBV".into(), ParamInfo::int32(ad.shutter_control, "SHUTTER_CONTROL"));
     map.insert("ShutterControlEPICS".into(), ParamInfo::int32(ad.shutter_control_epics, "SHUTTER_CONTROL_EPICS"));
     map.insert("ShutterStatus_RBV".into(), ParamInfo::int32(ad.shutter_status, "SHUTTER_STATUS"));
+    map.insert("ShutterStatusEPICS_RBV".into(), ParamInfo::int32(ad.shutter_status_epics, "SHUTTER_STATUS_EPICS"));
     map.insert("ShutterMode".into(), ParamInfo::int32(ad.shutter_mode, "SHUTTER_MODE"));
     map.insert("ShutterMode_RBV".into(), ParamInfo::int32(ad.shutter_mode, "SHUTTER_MODE"));
     map.insert("ShutterOpenDelay".into(), ParamInfo::float64(ad.shutter_open_delay, "SHUTTER_OPEN_DELAY"));
@@ -127,6 +129,9 @@ pub fn build_param_registry_from_params(ad: &ADBaseParams, sim: &SimDetectorPara
     // ===== NDArrayBase.db params =====
 
     // Detector info (string)
+    map.insert("PortName_RBV".into(), ParamInfo::string(base.port_name_self, "PORT_NAME_SELF"));
+    map.insert("ADCoreVersion_RBV".into(), ParamInfo::string(base.ad_core_version, "ADCORE_VERSION"));
+    map.insert("DriverVersion_RBV".into(), ParamInfo::string(base.driver_version, "DRIVER_VERSION"));
     map.insert("Manufacturer_RBV".into(), ParamInfo::string(base.manufacturer, "MANUFACTURER"));
     map.insert("Model_RBV".into(), ParamInfo::string(base.model, "MODEL"));
     map.insert("SerialNumber_RBV".into(), ParamInfo::string(base.serial_number, "SERIAL_NUMBER"));
@@ -148,19 +153,32 @@ pub fn build_param_registry_from_params(ad: &ADBaseParams, sim: &SimDetectorPara
     map.insert("ColorMode".into(), ParamInfo::int32(base.color_mode, "COLOR_MODE"));
     map.insert("ColorMode_RBV".into(), ParamInfo::int32(base.color_mode, "COLOR_MODE"));
     map.insert("UniqueId_RBV".into(), ParamInfo::int32(base.unique_id, "UNIQUE_ID"));
+    map.insert("BayerPattern_RBV".into(), ParamInfo::int32(base.bayer_pattern, "BAYER_PATTERN"));
+    map.insert("Codec_RBV".into(), ParamInfo::string(base.codec, "CODEC"));
+    map.insert("CompressedSize_RBV".into(), ParamInfo::int32(base.compressed_size, "COMPRESSED_SIZE"));
+    map.insert("TimeStamp_RBV".into(), ParamInfo::float64(base.timestamp_rbv, "TIMESTAMP"));
+    map.insert("EpicsTSSec_RBV".into(), ParamInfo::int32(base.epics_ts_sec, "EPICS_TS_SEC"));
+    map.insert("EpicsTSNsec_RBV".into(), ParamInfo::int32(base.epics_ts_nsec, "EPICS_TS_NSEC"));
 
-    // Pool stats (Int32)
+    // Pool stats (Int32) — both C-compatible names and _RBV variants
+    map.insert("PoolMaxMem".into(), ParamInfo::int32(base.pool_max_memory, "POOL_MAX_MEMORY"));
     map.insert("PoolMaxMem_RBV".into(), ParamInfo::int32(base.pool_max_memory, "POOL_MAX_MEMORY"));
+    map.insert("PoolUsedMem".into(), ParamInfo::int32(base.pool_used_memory, "POOL_USED_MEMORY"));
     map.insert("PoolUsedMem_RBV".into(), ParamInfo::int32(base.pool_used_memory, "POOL_USED_MEMORY"));
+    map.insert("PoolAllocBuffers".into(), ParamInfo::int32(base.pool_alloc_buffers, "POOL_ALLOC_BUFFERS"));
     map.insert("PoolAllocBuffers_RBV".into(), ParamInfo::int32(base.pool_alloc_buffers, "POOL_ALLOC_BUFFERS"));
+    map.insert("PoolFreeBuffers".into(), ParamInfo::int32(base.pool_free_buffers, "POOL_FREE_BUFFERS"));
     map.insert("PoolFreeBuffers_RBV".into(), ParamInfo::int32(base.pool_free_buffers, "POOL_FREE_BUFFERS"));
     map.insert("PoolMaxBuffers_RBV".into(), ParamInfo::int32(base.pool_max_buffers, "POOL_MAX_BUFFERS"));
     map.insert("PoolPreAlloc".into(), ParamInfo::int32(base.pool_pre_alloc, "POOL_PRE_ALLOC"));
     map.insert("PoolEmptyFreeList".into(), ParamInfo::int32(base.pool_empty_free_list, "POOL_EMPTY_FREE_LIST"));
+    map.insert("EmptyFreeList".into(), ParamInfo::int32(base.pool_empty_free_list, "POOL_EMPTY_FREE_LIST"));
+    map.insert("NumQueuedArrays".into(), ParamInfo::int32(base.num_queued_arrays, "NUM_QUEUED_ARRAYS"));
     map.insert("NumQueuedArrays_RBV".into(), ParamInfo::int32(base.num_queued_arrays, "NUM_QUEUED_ARRAYS"));
 
     // Attributes
     map.insert("NDAttributesFile".into(), ParamInfo::string(base.attributes_file, "ATTRIBUTES_FILE"));
+    map.insert("NDAttributesStatus".into(), ParamInfo::int32(base.attributes_status, "ATTRIBUTES_STATUS"));
     map.insert("NDAttributesStatus_RBV".into(), ParamInfo::int32(base.attributes_status, "ATTRIBUTES_STATUS"));
     map.insert("NDAttributesMacros".into(), ParamInfo::string(base.attributes_macros, "ATTRIBUTES_MACROS"));
 

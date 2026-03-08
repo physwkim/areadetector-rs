@@ -3,6 +3,7 @@ use asyn_rs::param::ParamType;
 use asyn_rs::port::PortDriverBase;
 
 /// Standard plugin base parameters registered on the PortDriverBase.
+#[derive(Clone, Copy)]
 pub struct PluginBaseParams {
     pub enable_callbacks: usize,
     pub blocking_callbacks: usize,

@@ -6,6 +6,9 @@ use asyn_rs::port::PortDriverBase;
 #[derive(Clone, Copy)]
 pub struct NDArrayDriverParams {
     // Detector info (Octet)
+    pub port_name_self: usize,
+    pub ad_core_version: usize,
+    pub driver_version: usize,
     pub manufacturer: usize,
     pub model: usize,
     pub serial_number: usize,
@@ -23,6 +26,12 @@ pub struct NDArrayDriverParams {
     pub data_type: usize,
     pub color_mode: usize,
     pub unique_id: usize,
+    pub bayer_pattern: usize,
+    pub codec: usize,
+    pub compressed_size: usize,
+    pub timestamp_rbv: usize,
+    pub epics_ts_sec: usize,
+    pub epics_ts_nsec: usize,
 
     // NDArray data (GenericPointer)
     pub ndarray_data: usize,
@@ -70,6 +79,9 @@ impl NDArrayDriverParams {
     pub fn create(base: &mut PortDriverBase) -> AsynResult<Self> {
         Ok(Self {
             // Detector info
+            port_name_self: base.create_param("PORT_NAME_SELF", ParamType::Octet)?,
+            ad_core_version: base.create_param("ADCORE_VERSION", ParamType::Octet)?,
+            driver_version: base.create_param("DRIVER_VERSION", ParamType::Octet)?,
             manufacturer: base.create_param("MANUFACTURER", ParamType::Octet)?,
             model: base.create_param("MODEL", ParamType::Octet)?,
             serial_number: base.create_param("SERIAL_NUMBER", ParamType::Octet)?,
@@ -87,6 +99,12 @@ impl NDArrayDriverParams {
             data_type: base.create_param("DATA_TYPE", ParamType::Int32)?,
             color_mode: base.create_param("COLOR_MODE", ParamType::Int32)?,
             unique_id: base.create_param("UNIQUE_ID", ParamType::Int32)?,
+            bayer_pattern: base.create_param("BAYER_PATTERN", ParamType::Int32)?,
+            codec: base.create_param("CODEC", ParamType::Octet)?,
+            compressed_size: base.create_param("COMPRESSED_SIZE", ParamType::Int32)?,
+            timestamp_rbv: base.create_param("TIMESTAMP", ParamType::Float64)?,
+            epics_ts_sec: base.create_param("EPICS_TS_SEC", ParamType::Int32)?,
+            epics_ts_nsec: base.create_param("EPICS_TS_NSEC", ParamType::Int32)?,
 
             // NDArray data
             ndarray_data: base.create_param("NDARRAY_DATA", ParamType::GenericPointer)?,

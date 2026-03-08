@@ -38,6 +38,12 @@ impl ADDriverBase {
         let params = ADDriverParams::create(&mut port_base)?;
 
         // Set initial values
+        // Identity strings
+        port_base.set_string_param(params.base.port_name_self, 0, port_name.into())?;
+        port_base.set_string_param(params.base.ad_core_version, 0, env!("CARGO_PKG_VERSION").into())?;
+        port_base.set_string_param(params.base.driver_version, 0, "0.0.0".into())?;
+        port_base.set_string_param(params.base.codec, 0, String::new())?;
+
         port_base.set_int32_param(params.max_size_x, 0, max_size_x)?;
         port_base.set_int32_param(params.max_size_y, 0, max_size_y)?;
         port_base.set_int32_param(params.size_x, 0, max_size_x)?;

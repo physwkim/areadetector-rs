@@ -8,6 +8,26 @@
 #   R     - PV name suffix
 #=================================================================#
 
+#----- Version / Identity -----
+
+record(stringin, "$(P)$(R)ADCoreVersion_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "Passive")
+    field(PINI, "YES")
+}
+
+record(stringin, "$(P)$(R)DriverVersion_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "Passive")
+    field(PINI, "YES")
+}
+
+record(stringin, "$(P)$(R)PortName_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "Passive")
+    field(PINI, "YES")
+}
+
 #----- Detector Info -----
 
 record(stringin, "$(P)$(R)Manufacturer_RBV") {
@@ -112,24 +132,66 @@ record(longin, "$(P)$(R)UniqueId_RBV") {
     field(SCAN, "1 second")
 }
 
+record(longin, "$(P)$(R)BayerPattern_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(stringin, "$(P)$(R)Codec_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longin, "$(P)$(R)CompressedSize_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(ai, "$(P)$(R)TimeStamp_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(PREC, "3")
+    field(SCAN, "1 second")
+}
+
+record(longin, "$(P)$(R)EpicsTSSec_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+record(longin, "$(P)$(R)EpicsTSNsec_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+#----- Array Rate (calculated from ArrayCounter) -----
+
+record(calc, "$(P)$(R)ArrayRate_RBV") {
+    field(INPA, "$(P)$(R)ArrayRate_RBV.B NPP NMS")
+    field(INPB, "$(P)$(R)ArrayCounter_RBV NPP NMS")
+    field(CALC, "B-A")
+    field(SCAN, "1 second")
+    field(PREC, "1")
+    field(EGU,  "Hz")
+}
+
 #----- Pool Statistics -----
 
-record(longin, "$(P)$(R)PoolMaxMem_RBV") {
+record(longin, "$(P)$(R)PoolMaxMem") {
     field(DTYP, "asynSimDetector")
     field(SCAN, "5 second")
 }
 
-record(longin, "$(P)$(R)PoolUsedMem_RBV") {
+record(longin, "$(P)$(R)PoolUsedMem") {
     field(DTYP, "asynSimDetector")
     field(SCAN, "5 second")
 }
 
-record(longin, "$(P)$(R)PoolAllocBuffers_RBV") {
+record(longin, "$(P)$(R)PoolAllocBuffers") {
     field(DTYP, "asynSimDetector")
     field(SCAN, "5 second")
 }
 
-record(longin, "$(P)$(R)PoolFreeBuffers_RBV") {
+record(longin, "$(P)$(R)PoolFreeBuffers") {
     field(DTYP, "asynSimDetector")
     field(SCAN, "5 second")
 }
@@ -139,17 +201,17 @@ record(longin, "$(P)$(R)PoolMaxBuffers_RBV") {
     field(SCAN, "5 second")
 }
 
+record(longout, "$(P)$(R)EmptyFreeList") {
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "0")
+}
+
 record(longout, "$(P)$(R)PoolPreAlloc") {
     field(DTYP, "asynSimDetector")
     field(VAL,  "0")
 }
 
-record(longout, "$(P)$(R)PoolEmptyFreeList") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "0")
-}
-
-record(longin, "$(P)$(R)NumQueuedArrays_RBV") {
+record(longin, "$(P)$(R)NumQueuedArrays") {
     field(DTYP, "asynSimDetector")
     field(SCAN, "5 second")
 }
@@ -160,7 +222,7 @@ record(stringout, "$(P)$(R)NDAttributesFile") {
     field(DTYP, "asynSimDetector")
 }
 
-record(longin, "$(P)$(R)NDAttributesStatus_RBV") {
+record(longin, "$(P)$(R)NDAttributesStatus") {
     field(DTYP, "asynSimDetector")
     field(SCAN, "5 second")
 }

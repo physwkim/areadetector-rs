@@ -10,7 +10,7 @@ use asyn_rs::user::AsynUser;
 use ad_core::driver::{ADDriver, ADDriverBase, ImageMode};
 use ad_core::ndarray_pool::NDArrayPool;
 use ad_core::params::ADBaseParams;
-use ad_core::plugin::channel::NDArrayOutput;
+use ad_core::plugin::channel::{NDArrayOutput, NDArraySender};
 
 use crate::params::SimDetectorParams;
 use crate::task::{AcqCommand, start_acquisition_task};
@@ -215,7 +215,8 @@ pub struct SimDetectorRuntime {
     pub runtime_handle: PortRuntimeHandle,
     pub ad_params: ADBaseParams,
     pub sim_params: SimDetectorParams,
-    pub pool: Arc<NDArrayPool>,
+    pool: Arc<NDArrayPool>,
+    array_output: Arc<parking_lot::Mutex<NDArrayOutput>>,
     #[allow(dead_code)]
     task_handle: Option<std::thread::JoinHandle<()>>,
 }
@@ -224,12 +225,22 @@ impl SimDetectorRuntime {
     pub fn port_handle(&self) -> &PortHandle {
         self.runtime_handle.port_handle()
     }
+
+    pub fn pool(&self) -> &Arc<NDArrayPool> {
+        &self.pool
+    }
+
+    /// Connect a downstream plugin's sender to this detector's output fan-out.
+    pub fn connect_downstream(&self, sender: NDArraySender) {
+        self.array_output.lock().add(sender);
+    }
 }
 
 /// Create a SimDetector with actor-based runtime and acquisition task.
 ///
-/// The `array_output` is moved into the acquisition task for publishing frames.
-/// Wire downstream senders to it before calling this function.
+/// The `array_output` is wrapped in `Arc<Mutex>` and shared between the
+/// acquisition task and the runtime, allowing downstream plugins to be
+/// connected after creation via `connect_downstream()`.
 pub fn create_sim_detector(
     port_name: &str,
     max_size_x: i32,
@@ -250,11 +261,13 @@ pub fn create_sim_detector(
 
     let (runtime_handle, _actor_jh) = create_port_runtime(det, RuntimeConfig::default());
 
+    let shared_output = Arc::new(parking_lot::Mutex::new(array_output));
+
     let port_handle = runtime_handle.port_handle().clone();
     let task_handle = start_acquisition_task(
         acq_rx,
         port_handle,
-        array_output,
+        shared_output.clone(),
         dirty,
         ad_params,
         sim_params,
@@ -265,6 +278,7 @@ pub fn create_sim_detector(
         ad_params,
         sim_params,
         pool,
+        array_output: shared_output,
         task_handle: Some(task_handle),
     })
 }

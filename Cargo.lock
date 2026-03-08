@@ -228,7 +228,7 @@ checksum = "c34f04666d835ff5d62e058c3995147c06f42fe86ff053337632bca83e42702d"
 
 [[package]]
 name = "epics-base-rs"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "bytes",
  "chrono",
@@ -667,6 +667,7 @@ name = "sim-detector"
 version = "0.2.1"
 dependencies = [
  "ad-core",
+ "ad-plugins",
  "asyn-rs",
  "epics-base-rs",
  "parking_lot",

@@ -334,3 +334,18 @@ record(stringin, "$(P)$(R)StringFromServer_RBV") {
     field(DTYP, "asynSimDetector")
     field(SCAN, "1 second")
 }
+
+
+#----- Detector State (C-compatible alias for Status_RBV) -----
+
+record(longin, "$(P)$(R)DetectorState_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}
+
+#----- EPICS Shutter Status -----
+
+record(longin, "$(P)$(R)ShutterStatusEPICS_RBV") {
+    field(DTYP, "asynSimDetector")
+    field(SCAN, "1 second")
+}

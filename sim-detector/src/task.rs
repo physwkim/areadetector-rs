@@ -121,7 +121,7 @@ fn wait_for_stop(acq_rx: &std::sync::mpsc::Receiver<AcqCommand>, duration: Durat
 pub fn start_acquisition_task(
     acq_rx: std::sync::mpsc::Receiver<AcqCommand>,
     port_handle: PortHandle,
-    array_output: NDArrayOutput,
+    array_output: Arc<parking_lot::Mutex<NDArrayOutput>>,
     dirty: Arc<parking_lot::Mutex<DirtyFlags>>,
     ad_params: ADBaseParams,
     sim_params: SimDetectorParams,
@@ -137,7 +137,7 @@ pub fn start_acquisition_task(
 fn acquisition_loop(
     acq_rx: std::sync::mpsc::Receiver<AcqCommand>,
     port_handle: PortHandle,
-    array_output: NDArrayOutput,
+    array_output: Arc<parking_lot::Mutex<NDArrayOutput>>,
     dirty: Arc<parking_lot::Mutex<DirtyFlags>>,
     ad: ADBaseParams,
     sim: SimDetectorParams,
@@ -195,8 +195,9 @@ fn acquisition_loop(
             // We need to update array_counter on the driver too
             let _ = port_handle.write_int32_blocking(ad.base.array_counter, 0, counter + 1);
             let _ = port_handle.write_int32_blocking(ad.num_images_counter, 0, num_counter);
+            let _ = port_handle.call_param_callbacks_blocking(0);
 
-            array_output.publish(Arc::new(frame));
+            array_output.lock().publish(Arc::new(frame));
 
             // Check stop conditions
             let image_mode = config.image_mode;

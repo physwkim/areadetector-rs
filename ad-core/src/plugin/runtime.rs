@@ -109,6 +109,8 @@ pub struct PluginRuntimeHandle {
     port_runtime: PortRuntimeHandle,
     array_sender: NDArraySender,
     port_name: String,
+    pub ndarray_params: NDArrayDriverParams,
+    pub plugin_params: PluginBaseParams,
 }
 
 impl PluginRuntimeHandle {
@@ -145,6 +147,8 @@ pub fn create_plugin_runtime<P: NDPluginProcess>(
         .expect("failed to create plugin port driver");
 
     let enable_callbacks_reason = driver.plugin_params.enable_callbacks;
+    let ndarray_params = driver.ndarray_params;
+    let plugin_params = driver.plugin_params;
 
     // Create port runtime (actor thread for param I/O)
     let (port_runtime, _actor_jh) =
@@ -176,6 +180,8 @@ pub fn create_plugin_runtime<P: NDPluginProcess>(
         port_runtime,
         array_sender,
         port_name: port_name.to_string(),
+        ndarray_params,
+        plugin_params,
     };
 
     (handle, data_jh)
@@ -246,6 +252,8 @@ pub fn create_plugin_runtime_with_output<P: NDPluginProcess>(
         .expect("failed to create plugin port driver");
 
     let enable_callbacks_reason = driver.plugin_params.enable_callbacks;
+    let ndarray_params = driver.ndarray_params;
+    let plugin_params = driver.plugin_params;
 
     let (port_runtime, _actor_jh) =
         create_port_runtime(driver, RuntimeConfig::default());
@@ -272,6 +280,8 @@ pub fn create_plugin_runtime_with_output<P: NDPluginProcess>(
         port_runtime,
         array_sender,
         port_name: port_name.to_string(),
+        ndarray_params,
+        plugin_params,
     };
 
     (handle, data_jh)

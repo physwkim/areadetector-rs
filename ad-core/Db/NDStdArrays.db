@@ -1,0 +1,23 @@
+#=================================================================#
+# NDStdArrays.db
+# Database for NDStdArrays plugin parameters
+# Modeled after ADCore/ADApp/Db/NDStdArrays.template
+#
+# Macros:
+#   P     - PV name prefix
+#   R     - PV name suffix
+#   PORT  - asyn port name for this plugin
+#   ADDR  - asyn address (default 0)
+#   TIMEOUT - asyn timeout (default 1)
+#   DTYP  - device type for asyn communication
+#
+# Note: Common plugin records (EnableCallbacks, PortName, etc.)
+#       are provided by NDPluginBase.db
+#=================================================================#
+
+#----- Array Data -----
+
+record(longin, "$(P)$(R)ArrayData") {
+    field(DTYP, "$(DTYP)")
+    field(SCAN, "I/O Intr")
+}
