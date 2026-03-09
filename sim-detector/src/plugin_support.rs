@@ -11,9 +11,14 @@ use asyn_rs::port_handle::PortHandle;
 use epics_base_rs::error::CaResult;
 use epics_base_rs::server::device_support::{DeviceSupport, WriteCompletion};
 use epics_base_rs::server::record::{Record, ScanType};
+use epics_base_rs::types::EpicsValue;
 
+use ad_core::ndarray::NDArray;
 use ad_core::plugin::runtime::PluginRuntimeHandle;
 use crate::ioc_support::{ParamInfo, ParamRegistry, ParamType};
+
+/// Handle to the latest NDArray data from a StdArrays plugin.
+pub type ArrayDataHandle = Arc<parking_lot::Mutex<Option<Arc<NDArray>>>>;
 
 /// Build the parameter registry for plugin base params from a PluginRuntimeHandle.
 pub fn build_plugin_base_registry(h: &PluginRuntimeHandle) -> ParamRegistry {
@@ -57,12 +62,18 @@ pub fn build_plugin_base_registry(h: &PluginRuntimeHandle) -> ParamRegistry {
 /// Device support for any areaDetector plugin.
 /// Wraps AsynDeviceSupport with a PortHandle and ParamRegistry.
 /// Records whose suffix has no param mapping are treated as no-ops.
+/// For StdArrays plugins, the "ArrayData" suffix is handled specially
+/// by reading raw pixel data from the plugin's data handle.
 pub struct PluginDeviceSupport {
     inner: AsynDeviceSupport,
     registry: Arc<ParamRegistry>,
     dtyp_name: String,
     /// True if this record's suffix was found in the param registry.
     mapped: bool,
+    /// Handle to latest NDArray data (only set for StdArrays plugins).
+    array_data: Option<ArrayDataHandle>,
+    /// True if this record is the ArrayData waveform.
+    is_array_data: bool,
 }
 
 impl PluginDeviceSupport {
@@ -70,6 +81,7 @@ impl PluginDeviceSupport {
         handle: PortHandle,
         registry: Arc<ParamRegistry>,
         dtyp_name: &str,
+        array_data: Option<ArrayDataHandle>,
     ) -> Self {
         use asyn_rs::adapter::AsynLink;
         let link = AsynLink {
@@ -83,6 +95,8 @@ impl PluginDeviceSupport {
             registry,
             dtyp_name: dtyp_name.to_string(),
             mapped: false,
+            array_data,
+            is_array_data: false,
         }
     }
 }
@@ -94,6 +108,13 @@ impl DeviceSupport for PluginDeviceSupport {
 
     fn set_record_info(&mut self, name: &str, scan: ScanType) {
         let suffix = name.rsplit(':').next().unwrap_or(name);
+
+        // ArrayData waveform: read pixel data directly from data handle
+        if suffix == "ArrayData" && self.array_data.is_some() {
+            self.is_array_data = true;
+            return;
+        }
+
         if let Some(info) = self.registry.get(suffix) {
             self.inner.set_drv_info(&info.drv_info);
             self.inner.set_reason(info.param_index);
@@ -110,10 +131,20 @@ impl DeviceSupport for PluginDeviceSupport {
     }
 
     fn init(&mut self, record: &mut dyn Record) -> CaResult<()> {
-        if self.mapped { self.inner.init(record) } else { Ok(()) }
+        if self.is_array_data || !self.mapped { Ok(()) } else { self.inner.init(record) }
     }
 
     fn read(&mut self, record: &mut dyn Record) -> CaResult<()> {
+        if self.is_array_data {
+            if let Some(ref data_handle) = self.array_data {
+                let guard = data_handle.lock();
+                if let Some(ref array) = *guard {
+                    let bytes = array.data.as_u8_slice();
+                    record.set_val(EpicsValue::CharArray(bytes.to_vec()))?;
+                }
+            }
+            return Ok(());
+        }
         if self.mapped { self.inner.read(record) } else { Ok(()) }
     }
 

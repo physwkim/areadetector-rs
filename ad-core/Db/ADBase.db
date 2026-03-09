@@ -1,351 +1,528 @@
 #=================================================================#
 # ADBase.db
-# Database for ADDriver base parameters
-# Modeled after ADCore/ADApp/Db/ADBase.template
+# Converted from ADCore/ADApp/Db/ADBase.template for areadetector-rs
+# Original: Mark Rivers, March 9, 2008
 #
-# Macros:
-#   P     - PV name prefix
-#   R     - PV name suffix
-#=================================================================#
+# Conversion rules:
+#   - Removed INP/OUT asyn link fields (Rust IOC uses device support registration)
+#   - Removed FLNK fields
+#   - Removed info() directives
+#   - DTYP set to "asynSimDetector"
+#   - Kept all enum strings, SCAN, PINI, VAL, PREC, EGU, ZNAM/ONAM fields
 
-#----- Image Size -----
+record(longin, "$(P)$(R)MaxSizeX_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
+}
 
-record(longin, "$(P)$(R)MaxSizeX_RBV") {
+record(longin, "$(P)$(R)MaxSizeY_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
+}
+
+###################################################################
+#  These records control the detector readout                     #
+#  including binning, region start and size                       #
+###################################################################
+
+record(longout, "$(P)$(R)BinX")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(VAL,  "1")
+}
+
+record(longin, "$(P)$(R)BinX_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)$(R)BinY")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(VAL,  "1")
+}
+
+record(longin, "$(P)$(R)BinY_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)$(R)MinX")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(VAL,  "0")
+}
+
+record(longin, "$(P)$(R)MinX_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)$(R)MinY")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(VAL,  "0")
+}
+
+record(longin, "$(P)$(R)MinY_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)$(R)SizeX")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(VAL,  "1")
+}
+
+record(longin, "$(P)$(R)SizeX_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)$(R)SizeY")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(VAL,  "1")
+}
+
+record(longin, "$(P)$(R)SizeY_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
+}
+
+record(bo, "$(P)$(R)ReverseX")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(ZNAM, "No")
+   field(ONAM, "Yes")
+   field(VAL,  "0")
+}
+
+record(bi, "$(P)$(R)ReverseX_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(ZNAM, "No")
+   field(ONAM, "Yes")
+   field(SCAN, "I/O Intr")
+}
+
+record(bo, "$(P)$(R)ReverseY")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(ZNAM, "No")
+   field(ONAM, "Yes")
+   field(VAL,  "0")
+}
+
+record(bi, "$(P)$(R)ReverseY_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(ZNAM, "No")
+   field(ONAM, "Yes")
+   field(SCAN, "I/O Intr")
+}
+
+###################################################################
+#  These records control the acquisition time and                 #
+#  period                                                         #
+###################################################################
+
+record(ao, "$(P)$(R)AcquireTime")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "3")
+   field(VAL,  "1.0")
+}
+
+record(ai, "$(P)$(R)AcquireTime_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "3")
+   field(SCAN, "I/O Intr")
+}
+
+record(ao, "$(P)$(R)AcquirePeriod")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "3")
+   field(VAL,  "0")
+}
+
+record(ai, "$(P)$(R)AcquirePeriod_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "3")
+   field(SCAN, "I/O Intr")
+}
+
+record(ai, "$(P)$(R)TimeRemaining_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "3")
+   field(SCAN, "I/O Intr")
+}
+
+###################################################################
+#  These records control the gain                                 #
+###################################################################
+
+record(ao, "$(P)$(R)Gain")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(VAL,  "1.0")
+   field(PREC, "3")
+}
+
+record(ai, "$(P)$(R)Gain_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "3")
+   field(SCAN, "I/O Intr")
+}
+
+###################################################################
+#  These records control the frame type                           #
+###################################################################
+
+record(mbbo, "$(P)$(R)FrameType")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(ZRST, "Normal")
+   field(ZRVL, "0")
+   field(ONST, "Background")
+   field(ONVL, "1")
+   field(TWST, "FlatField")
+   field(TWVL, "2")
+   field(THST, "DblCorrelation")
+   field(THVL, "3")
+   field(VAL,  "0")
+}
+
+record(mbbi, "$(P)$(R)FrameType_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(ZRST, "Normal")
+   field(ZRVL, "0")
+   field(ONST, "Background")
+   field(ONVL, "1")
+   field(TWST, "FlatField")
+   field(TWVL, "2")
+   field(THST, "DblCorrelation")
+   field(THVL, "3")
+   field(SCAN, "I/O Intr")
+}
+
+###################################################################
+#  These records control the acquisition mode                     #
+###################################################################
+
+record(mbbo, "$(P)$(R)ImageMode")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(ZRST, "Single")
+   field(ZRVL, "0")
+   field(ONST, "Multiple")
+   field(ONVL, "1")
+   field(TWST, "Continuous")
+   field(TWVL, "2")
+   field(VAL,  "2")
+}
+
+record(mbbi, "$(P)$(R)ImageMode_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(ZRST, "Single")
+   field(ZRVL, "0")
+   field(ONST, "Multiple")
+   field(ONVL, "1")
+   field(TWST, "Continuous")
+   field(TWVL, "2")
+   field(SCAN, "I/O Intr")
+}
+
+###################################################################
+#  These records control the trigger mode                         #
+###################################################################
+
+record(mbbo, "$(P)$(R)TriggerMode")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(ZRST, "Internal")
+   field(ZRVL, "0")
+   field(ONST, "External")
+   field(ONVL, "1")
+   field(VAL,  "0")
+}
+
+record(mbbi, "$(P)$(R)TriggerMode_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(ZRST, "Internal")
+   field(ZRVL, "0")
+   field(ONST, "External")
+   field(ONVL, "1")
+   field(SCAN, "I/O Intr")
+}
+
+###################################################################
+#  These records control the number of exposures and              #
+#  number of images                                               #
+###################################################################
+
+record(longout, "$(P)$(R)NumExposures")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(VAL,  "1")
+}
+
+record(longin, "$(P)$(R)NumExposures_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
+}
+
+record(longin, "$(P)$(R)NumExposuresCounter_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)$(R)NumImages")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(VAL,  "1")
+}
+
+record(longin, "$(P)$(R)NumImages_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
+}
+
+record(longin, "$(P)$(R)NumImagesCounter_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
+}
+
+###################################################################
+#  These records are for the detector state                       #
+###################################################################
+
+record(mbbi, "$(P)$(R)DetectorState_RBV")
+{
     field(DTYP, "asynSimDetector")
+    field(ZRST, "Idle")
+    field(ZRVL, "0")
+    field(ZRSV, "NO_ALARM")
+    field(ONST, "Acquire")
+    field(ONVL, "1")
+    field(ONSV, "NO_ALARM")
+    field(TWST, "Readout")
+    field(TWVL, "2")
+    field(TWSV, "NO_ALARM")
+    field(THST, "Correct")
+    field(THVL, "3")
+    field(THSV, "NO_ALARM")
+    field(FRST, "Saving")
+    field(FRVL, "4")
+    field(FRSV, "NO_ALARM")
+    field(FVST, "Aborting")
+    field(FVVL, "5")
+    field(FVSV, "MINOR")
+    field(SXST, "Error")
+    field(SXVL, "6")
+    field(SXSV, "MAJOR")
+    field(SVST, "Waiting")
+    field(SVVL, "7")
+    field(SVSV, "NO_ALARM")
+    field(EIST, "Initializing")
+    field(EIVL, "8")
+    field(EISV, "NO_ALARM")
+    field(NIST, "Disconnected")
+    field(NIVL, "9")
+    field(NISV, "INVALID")
+    field(TEST, "Aborted")
+    field(TEVL, "10")
+    field(TESV, "MINOR")
+    field(SCAN, "I/O Intr")
+}
+
+###################################################################
+#  These records provide status information                       #
+###################################################################
+
+record(waveform, "$(P)$(R)StatusMessage_RBV")
+{
+    field(DTYP, "asynSimDetector")
+    field(FTVL, "CHAR")
+    field(NELM, "256")
+    field(SCAN, "I/O Intr")
+}
+
+record(waveform, "$(P)$(R)StringToServer_RBV")
+{
+    field(DTYP, "asynSimDetector")
+    field(FTVL, "CHAR")
+    field(NELM, "256")
+    field(SCAN, "I/O Intr")
+}
+
+record(waveform, "$(P)$(R)StringFromServer_RBV")
+{
+    field(DTYP, "asynSimDetector")
+    field(FTVL, "CHAR")
+    field(NELM, "256")
+    field(SCAN, "I/O Intr")
+}
+
+###################################################################
+#  This record can be used to force a read of the detector status #
+###################################################################
+
+record(bo, "$(P)$(R)ReadStatus")
+{
+    field(DTYP, "asynSimDetector")
+    field(VAL,  "1")
     field(SCAN, "Passive")
+}
+
+###################################################################
+#  These records control the shutter                              #
+###################################################################
+
+record(mbbo, "$(P)$(R)ShutterMode")
+{
     field(PINI, "YES")
+    field(DTYP, "asynSimDetector")
+    field(ZRST, "None")
+    field(ZRVL, "0")
+    field(ONST, "EPICS PV")
+    field(ONVL, "1")
+    field(TWST, "Detector output")
+    field(TWVL, "2")
+    field(VAL,  "0")
 }
 
-record(longin, "$(P)$(R)MaxSizeY_RBV") {
+record(mbbi, "$(P)$(R)ShutterMode_RBV")
+{
     field(DTYP, "asynSimDetector")
-    field(SCAN, "Passive")
+    field(ZRST, "None")
+    field(ZRVL, "0")
+    field(ONST, "EPICS PV")
+    field(ONVL, "1")
+    field(TWST, "Camera output")
+    field(TWVL, "2")
+    field(SCAN, "I/O Intr")
+}
+
+record(bo, "$(P)$(R)ShutterControl")
+{
     field(PINI, "YES")
-}
-
-record(longout, "$(P)$(R)SizeX") {
     field(DTYP, "asynSimDetector")
-    field(VAL,  "256")
-}
-
-record(longin, "$(P)$(R)SizeX_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
-}
-
-record(longout, "$(P)$(R)SizeY") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "256")
-}
-
-record(longin, "$(P)$(R)SizeY_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
-}
-
-record(longout, "$(P)$(R)MinX") {
-    field(DTYP, "asynSimDetector")
+    field(ZNAM, "Close")
+    field(ONAM, "Open")
     field(VAL,  "0")
 }
 
-record(longin, "$(P)$(R)MinX_RBV") {
+record(bi, "$(P)$(R)ShutterControl_RBV")
+{
     field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
+    field(ZNAM, "Close")
+    field(ONAM, "Open")
+    field(SCAN, "I/O Intr")
 }
 
-record(longout, "$(P)$(R)MinY") {
+record(bi, "$(P)$(R)ShutterStatus_RBV")
+{
     field(DTYP, "asynSimDetector")
-    field(VAL,  "0")
+    field(ZNAM, "Closed")
+    field(ZSV,  "NO_ALARM")
+    field(ONAM, "Open")
+    field(OSV,  "MINOR")
+    field(SCAN, "I/O Intr")
 }
 
-record(longin, "$(P)$(R)MinY_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
+record(ao, "$(P)$(R)ShutterOpenDelay")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "3")
+   field(VAL,  "0.0")
 }
 
-record(longout, "$(P)$(R)BinX") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "1")
+record(ai, "$(P)$(R)ShutterOpenDelay_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "3")
+   field(SCAN, "I/O Intr")
 }
 
-record(longin, "$(P)$(R)BinX_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
+record(ao, "$(P)$(R)ShutterCloseDelay")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "3")
+   field(VAL,  "0.0")
 }
 
-record(longout, "$(P)$(R)BinY") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "1")
+record(ai, "$(P)$(R)ShutterCloseDelay_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "3")
+   field(SCAN, "I/O Intr")
 }
 
-record(longin, "$(P)$(R)BinY_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
+###################################################################
+#  These records control the detector temperature                 #
+###################################################################
+
+record(ao, "$(P)$(R)Temperature")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "1")
+   field(EGU,  "C")
+   field(VAL,  "25.0")
 }
 
-record(longout, "$(P)$(R)ReverseX") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "0")
+record(ai, "$(P)$(R)Temperature_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "1")
+   field(EGU,  "C")
+   field(SCAN, "I/O Intr")
 }
 
-record(longin, "$(P)$(R)ReverseX_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
-}
-
-record(longout, "$(P)$(R)ReverseY") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "0")
-}
-
-record(longin, "$(P)$(R)ReverseY_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
-}
-
-#----- Acquire Control -----
-
-record(longout, "$(P)$(R)Acquire") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "0")
-}
-
-record(longin, "$(P)$(R)Acquire_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
-}
-
-record(longout, "$(P)$(R)ImageMode") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "2")
-}
-
-record(longin, "$(P)$(R)ImageMode_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
-}
-
-record(longout, "$(P)$(R)NumImages") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "100")
-}
-
-record(longin, "$(P)$(R)NumImages_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
-}
-
-record(longin, "$(P)$(R)NumImagesCounter_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
-}
-
-record(longout, "$(P)$(R)NumExposures") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "1")
-}
-
-record(longin, "$(P)$(R)NumExposures_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
-}
-
-record(longin, "$(P)$(R)NumExposuresCounter_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
-}
-
-record(ao, "$(P)$(R)AcquireTime") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "4")
-    field(VAL,  "0.001")
-}
-
-record(ai, "$(P)$(R)AcquireTime_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "4")
-    field(SCAN, "1 second")
-}
-
-record(ao, "$(P)$(R)AcquirePeriod") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "4")
-    field(VAL,  "0.005")
-}
-
-record(ai, "$(P)$(R)AcquirePeriod_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "4")
-    field(SCAN, "1 second")
-}
-
-record(ai, "$(P)$(R)TimeRemaining_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "4")
-    field(SCAN, "1 second")
-}
-
-record(longin, "$(P)$(R)Status_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
-}
-
-record(stringin, "$(P)$(R)StatusMessage_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
-}
-
-record(longout, "$(P)$(R)AcquireBusy") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "0")
-}
-
-record(longin, "$(P)$(R)AcquireBusy_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
-}
-
-record(longout, "$(P)$(R)WaitForPlugins") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "0")
-}
-
-record(longout, "$(P)$(R)ReadStatus") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "0")
-}
-
-#----- Detector -----
-
-record(ao, "$(P)$(R)ADGain") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "3")
-    field(VAL,  "1")
-}
-
-record(ai, "$(P)$(R)ADGain_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "3")
-    field(SCAN, "1 second")
-}
-
-record(longout, "$(P)$(R)FrameType") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "0")
-}
-
-record(longin, "$(P)$(R)FrameType_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
-}
-
-record(longout, "$(P)$(R)TriggerMode") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "0")
-}
-
-record(longin, "$(P)$(R)TriggerMode_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
-}
-
-#----- Shutter -----
-
-record(longout, "$(P)$(R)ShutterControl") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "0")
-}
-
-record(longin, "$(P)$(R)ShutterControl_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
-}
-
-record(longout, "$(P)$(R)ShutterControlEPICS") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "0")
-}
-
-record(longin, "$(P)$(R)ShutterStatus_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
-}
-
-record(longout, "$(P)$(R)ShutterMode") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "0")
-}
-
-record(longin, "$(P)$(R)ShutterMode_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
-}
-
-record(ao, "$(P)$(R)ShutterOpenDelay") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "3")
-    field(VAL,  "0")
-}
-
-record(ai, "$(P)$(R)ShutterOpenDelay_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "3")
-    field(SCAN, "1 second")
-}
-
-record(ao, "$(P)$(R)ShutterCloseDelay") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "3")
-    field(VAL,  "0")
-}
-
-record(ai, "$(P)$(R)ShutterCloseDelay_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "3")
-    field(SCAN, "1 second")
-}
-
-#----- Temperature -----
-
-record(ao, "$(P)$(R)Temperature") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "1")
-    field(VAL,  "25")
-}
-
-record(ai, "$(P)$(R)Temperature_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "1")
-    field(SCAN, "1 second")
-}
-
-record(ai, "$(P)$(R)TemperatureActual") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "1")
-    field(SCAN, "1 second")
-}
-
-#----- Communication -----
-
-record(stringout, "$(P)$(R)StringToServer") {
-    field(DTYP, "asynSimDetector")
-}
-
-record(stringin, "$(P)$(R)StringFromServer_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
-}
-
-
-#----- Detector State (C-compatible alias for Status_RBV) -----
-
-record(longin, "$(P)$(R)DetectorState_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
-}
-
-#----- EPICS Shutter Status -----
-
-record(longin, "$(P)$(R)ShutterStatusEPICS_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
+record(ai, "$(P)$(R)TemperatureActual")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "1")
+   field(EGU,  "C")
+   field(SCAN, "I/O Intr")
 }

@@ -25,13 +25,15 @@ use ad_plugins::roi::{ROIConfig, ROIProcessor};
 use ad_plugins::process::{ProcessConfig, ProcessProcessor};
 use sim_detector::driver::{create_sim_detector, SimDetectorRuntime};
 use sim_detector::ioc_support::{build_param_registry_from_params, ParamRegistry, SimDeviceSupport};
-use sim_detector::plugin_support::{build_plugin_base_registry, PluginDeviceSupport};
+use sim_detector::plugin_support::{build_plugin_base_registry, ArrayDataHandle, PluginDeviceSupport};
 
 /// Info about a configured plugin (stored for device support wiring).
 struct PluginInfo {
     dtyp_name: String,
     port_handle: PortHandle,
     registry: Arc<ParamRegistry>,
+    /// Handle to latest NDArray data (only for StdArrays plugins).
+    array_data: Option<ArrayDataHandle>,
 }
 
 /// Shared state between startup commands and device support factory.
@@ -57,13 +59,14 @@ impl DriverHolder {
         })
     }
 
-    fn add_plugin(&self, dtyp: &str, handle: &PluginRuntimeHandle) {
+    fn add_plugin(&self, dtyp: &str, handle: &PluginRuntimeHandle, array_data: Option<ArrayDataHandle>) {
         let port_handle = handle.port_runtime().port_handle().clone();
         let registry = Arc::new(build_plugin_base_registry(handle));
         self.plugins.lock().unwrap().push(PluginInfo {
             dtyp_name: dtyp.to_string(),
             port_handle,
             registry,
+            array_data,
         });
         self._plugin_handles.lock().unwrap().push(handle.clone());
     }
@@ -132,13 +135,13 @@ impl CommandHandler for NDStdArraysConfigHandler {
         let runtime = runtime.as_ref().ok_or("simDetectorConfig must be called first")?;
         let pool = runtime.pool().clone();
 
-        let (handle, _data, _jh) = create_std_arrays_runtime(&port_name, pool);
+        let (handle, data, _jh) = create_std_arrays_runtime(&port_name, pool);
 
         // Wire to detector
         runtime.connect_downstream(handle.array_sender().clone());
 
         println!("NDStdArraysConfigure: port={port_name}, dtyp={dtyp}");
-        self.holder.add_plugin(&dtyp, &handle);
+        self.holder.add_plugin(&dtyp, &handle, Some(data));
 
         Ok(CommandOutcome::Continue)
     }
@@ -173,7 +176,7 @@ impl CommandHandler for NDStatsConfigHandler {
         runtime.connect_downstream(handle.array_sender().clone());
 
         println!("NDStatsConfigure: port={port_name}, dtyp={dtyp}, queueSize={queue_size}");
-        self.holder.add_plugin(&dtyp, &handle);
+        self.holder.add_plugin(&dtyp, &handle, None);
 
         Ok(CommandOutcome::Continue)
     }
@@ -211,7 +214,7 @@ impl CommandHandler for NDROIConfigHandler {
         runtime.connect_downstream(handle.array_sender().clone());
 
         println!("NDROIConfigure: port={port_name}, dtyp={dtyp}");
-        self.holder.add_plugin(&dtyp, &handle);
+        self.holder.add_plugin(&dtyp, &handle, None);
 
         Ok(CommandOutcome::Continue)
     }
@@ -249,7 +252,7 @@ impl CommandHandler for NDProcessConfigHandler {
         runtime.connect_downstream(handle.array_sender().clone());
 
         println!("NDProcessConfigure: port={port_name}, dtyp={dtyp}");
-        self.holder.add_plugin(&dtyp, &handle);
+        self.holder.add_plugin(&dtyp, &handle, None);
 
         Ok(CommandOutcome::Continue)
     }
@@ -396,7 +399,8 @@ async fn main() -> CaResult<()> {
                 let handle = p.port_handle.clone();
                 let registry = p.registry.clone();
                 let dtyp = p.dtyp_name.clone();
-                return Some(Box::new(PluginDeviceSupport::new(handle, registry, &dtyp))
+                let array_data = p.array_data.clone();
+                return Some(Box::new(PluginDeviceSupport::new(handle, registry, &dtyp, array_data))
                     as Box<dyn epics_base_rs::server::device_support::DeviceSupport>);
             }
         }

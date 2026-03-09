@@ -1,254 +1,522 @@
 #=================================================================#
 # simDetector.db
-# Database for SimDetector-specific parameters only.
-# ADBase.db, NDArrayBase.db, and NDFile.db are loaded separately.
-#=================================================================#
+# Converted from ADSimDetector/simDetectorApp/Db/simDetector.template for areadetector-rs
+# Original: Mark Rivers, March 23, 2008
+#
+# Conversion rules:
+#   - Removed INP/OUT asyn link fields (Rust IOC uses device support registration)
+#   - Removed FLNK fields
+#   - Removed info() directives
+#   - DTYP set to "asynSimDetector"
+#   - Kept all enum strings, SCAN, PINI, VAL, PREC, ZNAM/ONAM fields
 
-#----- Simulation Mode -----
+# Redefine the color mode choices from ADBase to only have those that the simDetector
+# driver supports.  Keep the same values (xxVL), but change the menu numbers.
 
-record(longout, "$(P)$(R)SimMode") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "0")
+record(mbbo, "$(P)$(R)ColorMode")
+{
+   field(DTYP, "asynSimDetector")
+   field(ZRST, "Mono")
+   field(ZRVL, "0")
+   field(ONST, "RGB1")
+   field(ONVL, "2")
+   field(TWST, "RGB2")
+   field(TWVL, "3")
+   field(THST, "RGB3")
+   field(THVL, "4")
+   field(FRST, "")
+   field(FVST, "")
+   field(SXST, "")
+   field(SVST, "")
+   field(EIST, "")
 }
 
-record(longin, "$(P)$(R)SimMode_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(SCAN, "1 second")
+record(mbbi, "$(P)$(R)ColorMode_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(ZRST, "Mono")
+   field(ZRVL, "0")
+   field(ONST, "RGB1")
+   field(ONVL, "2")
+   field(TWST, "RGB2")
+   field(TWVL, "3")
+   field(THST, "RGB3")
+   field(THVL, "4")
+   field(FRST, "")
+   field(FVST, "")
+   field(SXST, "")
+   field(SVST, "")
+   field(EIST, "")
+   field(SCAN, "I/O Intr")
 }
 
-#----- Sim Gains -----
+# New records for simulation detector
 
-record(ao, "$(P)$(R)Gain") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "2")
-    field(VAL,  "1")
+record(ao, "$(P)$(R)GainX")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
 }
 
-record(ai, "$(P)$(R)Gain_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "2")
-    field(SCAN, "1 second")
+record(ai, "$(P)$(R)GainX_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(SCAN, "I/O Intr")
 }
 
-record(ao, "$(P)$(R)GainX") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "2")
-    field(VAL,  "1")
+record(ao, "$(P)$(R)GainY")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
 }
 
-record(ai, "$(P)$(R)GainX_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "2")
-    field(SCAN, "1 second")
+record(ai, "$(P)$(R)GainY_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(SCAN, "I/O Intr")
 }
 
-record(ao, "$(P)$(R)GainY") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "2")
-    field(VAL,  "1")
+record(ao, "$(P)$(R)GainRed")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
 }
 
-record(ai, "$(P)$(R)GainY_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "2")
-    field(SCAN, "1 second")
+record(ai, "$(P)$(R)GainRed_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(SCAN, "I/O Intr")
 }
 
-record(ao, "$(P)$(R)GainRed") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "2")
-    field(VAL,  "1")
+record(ao, "$(P)$(R)GainGreen")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
 }
 
-record(ai, "$(P)$(R)GainRed_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "2")
-    field(SCAN, "1 second")
+record(ai, "$(P)$(R)GainGreen_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(SCAN, "I/O Intr")
 }
 
-record(ao, "$(P)$(R)GainGreen") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "2")
-    field(VAL,  "1")
+record(ao, "$(P)$(R)GainBlue")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
 }
 
-record(ai, "$(P)$(R)GainGreen_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "2")
-    field(SCAN, "1 second")
+record(ai, "$(P)$(R)GainBlue_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(SCAN, "I/O Intr")
 }
 
-record(ao, "$(P)$(R)GainBlue") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "2")
-    field(VAL,  "1")
+record(longout, "$(P)$(R)Reset")
+{
+   field(DTYP, "asynSimDetector")
 }
 
-record(ai, "$(P)$(R)GainBlue_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "2")
-    field(SCAN, "1 second")
+record(longin, "$(P)$(R)Reset_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
 }
 
-#----- Offset & Noise -----
-
-record(ao, "$(P)$(R)Offset") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "1")
-    field(VAL,  "0")
+record(ao, "$(P)$(R)Offset")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "1")
 }
 
-record(ai, "$(P)$(R)Offset_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "1")
-    field(SCAN, "1 second")
+record(ai, "$(P)$(R)Offset_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "1")
+   field(SCAN, "I/O Intr")
 }
 
-record(ao, "$(P)$(R)Noise") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "1")
-    field(VAL,  "0")
+record(ao, "$(P)$(R)Noise")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "1")
 }
 
-record(ai, "$(P)$(R)Noise_RBV") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "1")
-    field(SCAN, "1 second")
+record(ai, "$(P)$(R)Noise_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "1")
+   field(SCAN, "I/O Intr")
 }
 
-#----- Peak Parameters -----
-
-record(longout, "$(P)$(R)PeakStartX") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "1")
+record(mbbo, "$(P)$(R)SimMode")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(ZRST, "LinearRamp")
+   field(ZRVL, "0")
+   field(ONST, "Peaks")
+   field(ONVL, "1")
+   field(TWST, "Sine")
+   field(TWVL, "2")
+   field(THST, "Offset&Noise")
+   field(THVL, "3")
 }
 
-record(longout, "$(P)$(R)PeakStartY") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "1")
+record(mbbi, "$(P)$(R)SimMode_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(ZRST, "LinearRamp")
+   field(ZRVL, "0")
+   field(ONST, "Peaks")
+   field(ONVL, "1")
+   field(TWST, "Sine")
+   field(TWVL, "2")
+   field(THST, "Offset&Noise")
+   field(THVL, "3")
+   field(SCAN, "I/O Intr")
 }
 
-record(longout, "$(P)$(R)PeakWidthX") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "10")
+# Records for peak simulation mode
+
+record(longout, "$(P)$(R)PeakStartX")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
 }
 
-record(longout, "$(P)$(R)PeakWidthY") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "20")
+record(longin, "$(P)$(R)PeakStartX_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
 }
 
-record(longout, "$(P)$(R)PeakNumX") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "1")
+record(longout, "$(P)$(R)PeakStartY")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
 }
 
-record(longout, "$(P)$(R)PeakNumY") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "1")
+record(longin, "$(P)$(R)PeakStartY_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
 }
 
-record(longout, "$(P)$(R)PeakStepX") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "1")
+record(longout, "$(P)$(R)PeakNumX")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
 }
 
-record(longout, "$(P)$(R)PeakStepY") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "1")
+record(longin, "$(P)$(R)PeakNumX_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
 }
 
-record(ao, "$(P)$(R)PeakHeightVariation") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "2")
-    field(VAL,  "0")
+record(longout, "$(P)$(R)PeakNumY")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
 }
 
-record(longout, "$(P)$(R)ResetImage") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "0")
+record(longin, "$(P)$(R)PeakNumY_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
 }
 
-#----- Sine Parameters -----
-
-record(longout, "$(P)$(R)XSineOperation") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "0")
+record(longout, "$(P)$(R)PeakStepX")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
 }
 
-record(ao, "$(P)$(R)XSine1Amplitude") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "3")
-    field(VAL,  "1")
+record(longin, "$(P)$(R)PeakStepX_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
 }
 
-record(ao, "$(P)$(R)XSine1Frequency") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "3")
-    field(VAL,  "1")
+record(longout, "$(P)$(R)PeakStepY")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
 }
 
-record(ao, "$(P)$(R)XSine1Phase") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "3")
-    field(VAL,  "0")
+record(longin, "$(P)$(R)PeakStepY_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
 }
 
-record(ao, "$(P)$(R)XSine2Amplitude") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "3")
-    field(VAL,  "1")
+record(longout, "$(P)$(R)PeakWidthX")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
 }
 
-record(ao, "$(P)$(R)XSine2Frequency") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "3")
-    field(VAL,  "2")
+record(longin, "$(P)$(R)PeakWidthX_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
 }
 
-record(ao, "$(P)$(R)XSine2Phase") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "3")
-    field(VAL,  "0")
+record(longout, "$(P)$(R)PeakWidthY")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
 }
 
-record(longout, "$(P)$(R)YSineOperation") {
-    field(DTYP, "asynSimDetector")
-    field(VAL,  "0")
+record(longin, "$(P)$(R)PeakWidthY_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(SCAN, "I/O Intr")
 }
 
-record(ao, "$(P)$(R)YSine1Amplitude") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "3")
-    field(VAL,  "1")
+record(ao, "$(P)$(R)PeakVariation")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "1")
 }
 
-record(ao, "$(P)$(R)YSine1Frequency") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "3")
-    field(VAL,  "1")
+record(ai, "$(P)$(R)PeakVariation_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "1")
+   field(SCAN, "I/O Intr")
 }
 
-record(ao, "$(P)$(R)YSine1Phase") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "3")
-    field(VAL,  "0")
+# Records for sine wave simulation mode
+
+record(mbbo, "$(P)$(R)XSineOperation")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(ZRST, "Add")
+   field(ZRVL, "0")
+   field(ONST, "Multiply")
+   field(ONVL, "1")
 }
 
-record(ao, "$(P)$(R)YSine2Amplitude") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "3")
-    field(VAL,  "1")
+record(mbbi, "$(P)$(R)XSineOperation_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(ZRST, "Add")
+   field(ZRVL, "0")
+   field(ONST, "Multiply")
+   field(ONVL, "1")
+   field(SCAN, "I/O Intr")
 }
 
-record(ao, "$(P)$(R)YSine2Frequency") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "3")
-    field(VAL,  "2")
+record(ao, "$(P)$(R)XSine1Amplitude")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(VAL,  "1")
 }
 
-record(ao, "$(P)$(R)YSine2Phase") {
-    field(DTYP, "asynSimDetector")
-    field(PREC, "3")
-    field(VAL,  "0")
+record(ai, "$(P)$(R)XSine1Amplitude_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(SCAN, "I/O Intr")
+}
+
+record(ao, "$(P)$(R)XSine1Frequency")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(VAL,  "1")
+}
+
+record(ai, "$(P)$(R)XSine1Frequency_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(SCAN, "I/O Intr")
+}
+
+record(ao, "$(P)$(R)XSine1Phase")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+}
+
+record(ai, "$(P)$(R)XSine1Phase_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(SCAN, "I/O Intr")
+}
+
+record(ao, "$(P)$(R)XSine2Amplitude")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(VAL,  "1")
+}
+
+record(ai, "$(P)$(R)XSine2Amplitude_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(SCAN, "I/O Intr")
+}
+
+record(ao, "$(P)$(R)XSine2Frequency")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(VAL,  "2")
+}
+
+record(ai, "$(P)$(R)XSine2Frequency_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(SCAN, "I/O Intr")
+}
+
+record(ao, "$(P)$(R)XSine2Phase")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(VAL,  "90")
+}
+
+record(ai, "$(P)$(R)XSine2Phase_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(SCAN, "I/O Intr")
+}
+
+record(mbbo, "$(P)$(R)YSineOperation")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(ZRST, "Add")
+   field(ZRVL, "0")
+   field(ONST, "Multiply")
+   field(ONVL, "1")
+}
+
+record(mbbi, "$(P)$(R)YSineOperation_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(ZRST, "Add")
+   field(ZRVL, "0")
+   field(ONST, "Multiply")
+   field(ONVL, "1")
+   field(SCAN, "I/O Intr")
+}
+
+record(ao, "$(P)$(R)YSine1Amplitude")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(VAL,  "1")
+}
+
+record(ai, "$(P)$(R)YSine1Amplitude_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(SCAN, "I/O Intr")
+}
+
+record(ao, "$(P)$(R)YSine1Frequency")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(VAL,  "1")
+}
+
+record(ai, "$(P)$(R)YSine1Frequency_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(SCAN, "I/O Intr")
+}
+
+record(ao, "$(P)$(R)YSine1Phase")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+}
+
+record(ai, "$(P)$(R)YSine1Phase_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(SCAN, "I/O Intr")
+}
+
+record(ao, "$(P)$(R)YSine2Amplitude")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(VAL,  "1")
+}
+
+record(ai, "$(P)$(R)YSine2Amplitude_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(SCAN, "I/O Intr")
+}
+
+record(ao, "$(P)$(R)YSine2Frequency")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(VAL,  "2")
+}
+
+record(ai, "$(P)$(R)YSine2Frequency_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(SCAN, "I/O Intr")
+}
+
+record(ao, "$(P)$(R)YSine2Phase")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(VAL,  "90")
+}
+
+record(ai, "$(P)$(R)YSine2Phase_RBV")
+{
+   field(DTYP, "asynSimDetector")
+   field(PREC, "2")
+   field(SCAN, "I/O Intr")
 }

@@ -1,23 +1,22 @@
 #=================================================================#
 # NDStdArrays.db
-# Database for NDStdArrays plugin parameters
-# Modeled after ADCore/ADApp/Db/NDStdArrays.template
+# Converted from ADCore/ADApp/Db/NDStdArrays.template for areadetector-rs
+# Original: Mark Rivers, April 14, 2008
 #
-# Macros:
-#   P     - PV name prefix
-#   R     - PV name suffix
-#   PORT  - asyn port name for this plugin
-#   ADDR  - asyn address (default 0)
-#   TIMEOUT - asyn timeout (default 1)
-#   DTYP  - device type for asyn communication
-#
-# Note: Common plugin records (EnableCallbacks, PortName, etc.)
-#       are provided by NDPluginBase.db
-#=================================================================#
+# Conversion rules:
+#   - Removed INP/OUT asyn link fields (Rust IOC uses device support registration)
+#   - DTYP set to "$(DTYP)" for per-plugin substitution
+#   - SCAN changed to "1 second" (IOC doesn't support I/O Intr for array data yet)
+#   - Kept FTVL and NELM from original
 
-#----- Array Data -----
+###################################################################
+#  This record is the array waveform data                         #
+###################################################################
 
-record(longin, "$(P)$(R)ArrayData") {
+record(waveform, "$(P)$(R)ArrayData")
+{
     field(DTYP, "$(DTYP)")
-    field(SCAN, "I/O Intr")
+    field(FTVL, "$(FTVL)")
+    field(NELM, "$(NELEMENTS)")
+    field(SCAN, "1 second")
 }

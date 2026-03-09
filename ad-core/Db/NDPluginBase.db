@@ -1,119 +1,300 @@
 #=================================================================#
 # NDPluginBase.db
-# Database for NDPlugin base parameters common to all plugins
-# Modeled after ADCore/ADApp/Db/NDPluginBase.template
+# Converted from ADCore/ADApp/Db/NDPluginBase.template for areadetector-rs
+# Original: Mark Rivers, April 25, 2008
 #
-# Macros:
-#   P            - PV name prefix
-#   R            - PV name suffix
-#   PORT         - asyn port name for this plugin
-#   ADDR         - asyn address (default 0)
-#   TIMEOUT      - asyn timeout (default 1)
-#   NDARRAY_PORT - port name for NDArray source
-#   DTYP         - device type for asyn communication
-#=================================================================#
+# Conversion rules:
+#   - Removed INP/OUT asyn link fields (Rust IOC uses device support registration)
+#   - Removed FLNK fields
+#   - Removed info() directives
+#   - DTYP set to "$(DTYP)" for per-plugin substitution
+#   - Removed subArray/fanout/calcout/busy/asyn records (EPICS database processing)
+#   - Removed MaxArrayRate soft channel / calcout chain
+#   - Removed QueueFreeLow/QueueUseHIGH/QueueUseHIHI/QueueUse/SortFreeLow calcout records
 
-#----- Plugin Identity -----
+###################################################################
+#  This record contains the type of plugin                        #
+###################################################################
 
-record(stringin, "$(P)$(R)PortName_RBV") {
-    field(DTYP, "$(DTYP)")
-    field(SCAN, "Passive")
-    field(PINI, "1")
+record(stringin, "$(P)$(R)PluginType_RBV")
+{
+   field(DTYP, "$(DTYP)")
+   field(VAL,  "Unknown")
+   field(SCAN, "I/O Intr")
 }
 
-record(stringin, "$(P)$(R)PluginType_RBV") {
-    field(DTYP, "$(DTYP)")
-    field(SCAN, "Passive")
-    field(PINI, "1")
-}
+###################################################################
+#  These records control the connection of the server to          #
+#  an NDArray driver port and address                             #
+###################################################################
 
-#----- NDArray Source Connection -----
-
-record(stringout, "$(P)$(R)NDArrayPort") {
+record(stringout, "$(P)$(R)NDArrayPort")
+{
+    field(PINI, "YES")
     field(DTYP, "$(DTYP)")
     field(VAL,  "$(NDARRAY_PORT)")
-    field(PINI, "1")
 }
 
-record(stringin, "$(P)$(R)NDArrayPort_RBV") {
+record(stringin, "$(P)$(R)NDArrayPort_RBV")
+{
     field(DTYP, "$(DTYP)")
-    field(SCAN, "Passive")
-    field(PINI, "1")
+    field(SCAN, "I/O Intr")
 }
 
-record(longout, "$(P)$(R)NDArrayAddress") {
+record(longout, "$(P)$(R)NDArrayAddress")
+{
+    field(PINI, "YES")
     field(DTYP, "$(DTYP)")
     field(VAL,  "0")
-    field(PINI, "1")
 }
 
-record(longin, "$(P)$(R)NDArrayAddress_RBV") {
+record(longin, "$(P)$(R)NDArrayAddress_RBV")
+{
     field(DTYP, "$(DTYP)")
-    field(SCAN, "Passive")
-    field(PINI, "1")
+    field(SCAN, "I/O Intr")
 }
 
-#----- Callback Control -----
+###################################################################
+#  These records control whether callbacks are enabled and        #
+#  minimum time between callbacks                                 #
+###################################################################
 
-record(longout, "$(P)$(R)EnableCallbacks") {
+record(bo, "$(P)$(R)EnableCallbacks")
+{
+    field(PINI, "YES")
+    field(DTYP, "$(DTYP)")
+    field(ZNAM, "Disable")
+    field(ONAM, "Enable")
+    field(VAL,  "0")
+}
+
+record(bi, "$(P)$(R)EnableCallbacks_RBV")
+{
+    field(DTYP, "$(DTYP)")
+    field(ZNAM, "Disable")
+    field(ONAM, "Enable")
+    field(ZSV,  "NO_ALARM")
+    field(OSV,  "MINOR")
+    field(SCAN, "I/O Intr")
+}
+
+record(ao, "$(P)$(R)MinCallbackTime")
+{
+    field(PINI, "YES")
+    field(DTYP, "$(DTYP)")
+    field(EGU,  "s")
+    field(PREC, "3")
+    field(VAL,  "0.0")
+    field(DRVL, "0")
+}
+
+record(ai, "$(P)$(R)MinCallbackTime_RBV")
+{
+    field(DTYP, "$(DTYP)")
+    field(EGU,  "s")
+    field(PREC, "3")
+    field(SCAN, "I/O Intr")
+}
+
+record(ao, "$(P)$(R)MaxByteRate")
+{
+    field(PINI, "YES")
+    field(DTYP, "$(DTYP)")
+    field(EGU,  "s")
+    field(PREC, "3")
+    field(VAL,  "0.0")
+    field(DRVL, "0")
+}
+
+record(ai, "$(P)$(R)MaxByteRate_RBV")
+{
+    field(DTYP, "$(DTYP)")
+    field(EGU,  "s")
+    field(PREC, "3")
+    field(SCAN, "I/O Intr")
+}
+
+###################################################################
+#  This record contains the last execution time of the plugin     #
+###################################################################
+
+record(ai, "$(P)$(R)ExecutionTime_RBV")
+{
+    field(DTYP, "$(DTYP)")
+    field(EGU,  "ms")
+    field(PREC, "3")
+    field(SCAN, "I/O Intr")
+}
+
+###################################################################
+#  This record requests that the plugin execute again with the    #
+#  same NDArray                                                   #
+###################################################################
+
+record(bo, "$(P)$(R)ProcessPlugin")
+{
     field(DTYP, "$(DTYP)")
     field(VAL,  "1")
-    field(PINI, "1")
 }
 
-record(longin, "$(P)$(R)EnableCallbacks_RBV") {
-    field(DTYP, "$(DTYP)")
-    field(SCAN, "I/O Intr")
-    field(PINI, "1")
-}
+###################################################################
+#  These records control whether callbacks block or not           #
+###################################################################
 
-record(longout, "$(P)$(R)BlockingCallbacks") {
+record(bo, "$(P)$(R)BlockingCallbacks")
+{
+    field(PINI, "YES")
     field(DTYP, "$(DTYP)")
+    field(ZNAM, "No")
+    field(ONAM, "Yes")
     field(VAL,  "0")
-    field(PINI, "1")
 }
 
-record(longin, "$(P)$(R)BlockingCallbacks_RBV") {
+record(bi, "$(P)$(R)BlockingCallbacks_RBV")
+{
     field(DTYP, "$(DTYP)")
+    field(ZNAM, "No")
+    field(ONAM, "Yes")
     field(SCAN, "I/O Intr")
-    field(PINI, "1")
 }
 
-#----- Queue Status -----
-
-record(longin, "$(P)$(R)QueueSize") {
-    field(DTYP, "$(DTYP)")
-    field(SCAN, "Passive")
-    field(PINI, "1")
-}
-
-record(longin, "$(P)$(R)QueueFree") {
-    field(DTYP, "$(DTYP)")
-    field(SCAN, "1 second")
-}
-
-#----- Array Counters -----
-
-record(longout, "$(P)$(R)DroppedArrays") {
+record(longout, "$(P)$(R)DroppedArrays")
+{
+    field(PINI, "YES")
     field(DTYP, "$(DTYP)")
     field(VAL,  "0")
 }
 
-record(longin, "$(P)$(R)DroppedArrays_RBV") {
+record(longin, "$(P)$(R)DroppedArrays_RBV")
+{
     field(DTYP, "$(DTYP)")
-    field(SCAN, "1 second")
+    field(SCAN, "I/O Intr")
 }
 
-record(longin, "$(P)$(R)ArrayCounter_RBV") {
+record(longout, "$(P)$(R)QueueSize")
+{
     field(DTYP, "$(DTYP)")
-    field(SCAN, "1 second")
+    field(PINI, "YES")
 }
 
-record(calc, "$(P)$(R)ArrayRate_RBV") {
-    field(INPA, "$(P)$(R)ArrayRate_RBV.B NPP NMS")
-    field(INPB, "$(P)$(R)ArrayCounter_RBV NPP NMS")
-    field(CALC, "B-A")
-    field(SCAN, "1 second")
-    field(PREC, "1")
-    field(EGU,  "Hz")
+record(longin, "$(P)$(R)QueueSize_RBV")
+{
+    field(DTYP, "$(DTYP)")
+    field(SCAN, "I/O Intr")
+}
+
+record(longin, "$(P)$(R)QueueFree")
+{
+    field(DTYP, "$(DTYP)")
+    field(LLSV, "MAJOR")
+    field(LSV,  "MINOR")
+    field(LOLO, "0")
+    field(HYST, "1")
+    field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)$(R)NumThreads")
+{
+    field(DTYP, "$(DTYP)")
+    field(VAL,  "1")
+    field(PINI, "YES")
+}
+
+record(longin, "$(P)$(R)NumThreads_RBV")
+{
+    field(DTYP, "$(DTYP)")
+    field(SCAN, "I/O Intr")
+}
+
+record(longin, "$(P)$(R)MaxThreads_RBV")
+{
+    field(DTYP, "$(DTYP)")
+    field(SCAN, "I/O Intr")
+}
+
+###################################################################
+#  These records control output array sorting                     #
+###################################################################
+
+record(mbbo, "$(P)$(R)SortMode")
+{
+    field(PINI, "YES")
+    field(DTYP, "$(DTYP)")
+    field(ZRVL, "0")
+    field(ZRST, "Unsorted")
+    field(ONVL, "1")
+    field(ONST, "Sorted")
+}
+
+record(mbbi, "$(P)$(R)SortMode_RBV")
+{
+    field(DTYP, "$(DTYP)")
+    field(ZRVL, "0")
+    field(ZRST, "Unsorted")
+    field(ONVL, "1")
+    field(ONST, "Sorted")
+    field(SCAN, "I/O Intr")
+}
+
+record(ao, "$(P)$(R)SortTime")
+{
+    field(PINI, "YES")
+    field(DTYP, "$(DTYP)")
+    field(PREC, "3")
+    field(VAL,  "0.1")
+}
+
+record(ai, "$(P)$(R)SortTime_RBV")
+{
+    field(DTYP, "$(DTYP)")
+    field(PREC, "3")
+    field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)$(R)SortSize")
+{
+    field(DTYP, "$(DTYP)")
+    field(VAL,  "20")
+    field(PINI, "YES")
+}
+
+record(longin, "$(P)$(R)SortSize_RBV")
+{
+    field(DTYP, "$(DTYP)")
+    field(SCAN, "I/O Intr")
+}
+
+record(longin, "$(P)$(R)SortFree")
+{
+    field(DTYP, "$(DTYP)")
+    field(LLSV, "MAJOR")
+    field(LSV,  "MINOR")
+    field(LOLO, "0")
+    field(HYST, "1")
+    field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)$(R)DroppedOutputArrays")
+{
+    field(PINI, "YES")
+    field(DTYP, "$(DTYP)")
+    field(VAL,  "0")
+}
+
+record(longin, "$(P)$(R)DroppedOutputArrays_RBV")
+{
+    field(DTYP, "$(DTYP)")
+    field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)$(R)DisorderedArrays")
+{
+    field(DTYP, "$(DTYP)")
+    field(PINI, "YES")
+}
+
+record(longin, "$(P)$(R)DisorderedArrays_RBV")
+{
+    field(DTYP, "$(DTYP)")
+    field(SCAN, "I/O Intr")
 }
