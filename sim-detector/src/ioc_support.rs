@@ -124,7 +124,11 @@ pub fn build_param_registry_from_params(ad: &ADBaseParams, sim: &SimDetectorPara
 
     // Communication
     map.insert("StringToServer".into(), ParamInfo::string(ad.string_to_server, "STRING_TO_SERVER"));
+    map.insert("StringToServer_RBV".into(), ParamInfo::string(ad.string_to_server, "STRING_TO_SERVER"));
     map.insert("StringFromServer_RBV".into(), ParamInfo::string(ad.string_from_server, "STRING_FROM_SERVER"));
+
+    // AcquireBusyCB
+    map.insert("AcquireBusyCB".into(), ParamInfo::int32(ad.acquire_busy, "ACQUIRE_BUSY"));
 
     // ===== NDArrayBase.db params =====
 
@@ -147,7 +151,10 @@ pub fn build_param_registry_from_params(ad: &ADBaseParams, sim: &SimDetectorPara
     map.insert("ArrayCounter_RBV".into(), ParamInfo::int32(base.array_counter, "ARRAY_COUNTER"));
     map.insert("ArrayCallbacks".into(), ParamInfo::int32(base.array_callbacks, "ARRAY_CALLBACKS"));
     map.insert("ArrayCallbacks_RBV".into(), ParamInfo::int32(base.array_callbacks, "ARRAY_CALLBACKS"));
+    map.insert("NDimensions".into(), ParamInfo::int32(base.n_dimensions, "NDIMENSIONS"));
     map.insert("NDimensions_RBV".into(), ParamInfo::int32(base.n_dimensions, "NDIMENSIONS"));
+    map.insert("Dimensions".into(), ParamInfo::int32(base.n_dimensions, "NDIMENSIONS"));
+    map.insert("Dimensions_RBV".into(), ParamInfo::int32(base.n_dimensions, "NDIMENSIONS"));
     map.insert("DataType".into(), ParamInfo::int32(base.data_type, "DATA_TYPE"));
     map.insert("DataType_RBV".into(), ParamInfo::int32(base.data_type, "DATA_TYPE"));
     map.insert("ColorMode".into(), ParamInfo::int32(base.color_mode, "COLOR_MODE"));
@@ -160,11 +167,11 @@ pub fn build_param_registry_from_params(ad: &ADBaseParams, sim: &SimDetectorPara
     map.insert("EpicsTSSec_RBV".into(), ParamInfo::int32(base.epics_ts_sec, "EPICS_TS_SEC"));
     map.insert("EpicsTSNsec_RBV".into(), ParamInfo::int32(base.epics_ts_nsec, "EPICS_TS_NSEC"));
 
-    // Pool stats (Int32) — both C-compatible names and _RBV variants
-    map.insert("PoolMaxMem".into(), ParamInfo::int32(base.pool_max_memory, "POOL_MAX_MEMORY"));
-    map.insert("PoolMaxMem_RBV".into(), ParamInfo::int32(base.pool_max_memory, "POOL_MAX_MEMORY"));
-    map.insert("PoolUsedMem".into(), ParamInfo::int32(base.pool_used_memory, "POOL_USED_MEMORY"));
-    map.insert("PoolUsedMem_RBV".into(), ParamInfo::int32(base.pool_used_memory, "POOL_USED_MEMORY"));
+    // Pool stats — PoolMaxMem/PoolUsedMem are Float64 (MB), rest are Int32
+    map.insert("PoolMaxMem".into(), ParamInfo::float64(base.pool_max_memory, "POOL_MAX_MEMORY"));
+    map.insert("PoolMaxMem_RBV".into(), ParamInfo::float64(base.pool_max_memory, "POOL_MAX_MEMORY"));
+    map.insert("PoolUsedMem".into(), ParamInfo::float64(base.pool_used_memory, "POOL_USED_MEMORY"));
+    map.insert("PoolUsedMem_RBV".into(), ParamInfo::float64(base.pool_used_memory, "POOL_USED_MEMORY"));
     map.insert("PoolAllocBuffers".into(), ParamInfo::int32(base.pool_alloc_buffers, "POOL_ALLOC_BUFFERS"));
     map.insert("PoolAllocBuffers_RBV".into(), ParamInfo::int32(base.pool_alloc_buffers, "POOL_ALLOC_BUFFERS"));
     map.insert("PoolFreeBuffers".into(), ParamInfo::int32(base.pool_free_buffers, "POOL_FREE_BUFFERS"));
@@ -173,6 +180,10 @@ pub fn build_param_registry_from_params(ad: &ADBaseParams, sim: &SimDetectorPara
     map.insert("PoolPreAlloc".into(), ParamInfo::int32(base.pool_pre_alloc, "POOL_PRE_ALLOC"));
     map.insert("PoolEmptyFreeList".into(), ParamInfo::int32(base.pool_empty_free_list, "POOL_EMPTY_FREE_LIST"));
     map.insert("EmptyFreeList".into(), ParamInfo::int32(base.pool_empty_free_list, "POOL_EMPTY_FREE_LIST"));
+    map.insert("PoolPollStats".into(), ParamInfo::int32(base.pool_poll_stats, "POOL_POLL_STATS"));
+    map.insert("PreAllocBuffers".into(), ParamInfo::int32(base.pool_pre_alloc, "POOL_PRE_ALLOC"));
+    map.insert("NumPreAllocBuffers".into(), ParamInfo::int32(base.pool_num_pre_alloc_buffers, "POOL_NUM_PRE_ALLOC_BUFFERS"));
+    map.insert("NumPreAllocBuffers_RBV".into(), ParamInfo::int32(base.pool_num_pre_alloc_buffers, "POOL_NUM_PRE_ALLOC_BUFFERS"));
     map.insert("NumQueuedArrays".into(), ParamInfo::int32(base.num_queued_arrays, "NUM_QUEUED_ARRAYS"));
     map.insert("NumQueuedArrays_RBV".into(), ParamInfo::int32(base.num_queued_arrays, "NUM_QUEUED_ARRAYS"));
 
@@ -217,6 +228,15 @@ pub fn build_param_registry_from_params(ad: &ADBaseParams, sim: &SimDetectorPara
     map.insert("CreateDir_RBV".into(), ParamInfo::int32(base.create_dir, "CREATE_DIR"));
     map.insert("TempSuffix".into(), ParamInfo::string(base.temp_suffix, "TEMP_SUFFIX"));
     map.insert("TempSuffix_RBV".into(), ParamInfo::string(base.temp_suffix, "TEMP_SUFFIX"));
+    map.insert("AutoSave".into(), ParamInfo::int32(base.auto_save, "AUTO_SAVE"));
+    map.insert("AutoSave_RBV".into(), ParamInfo::int32(base.auto_save, "AUTO_SAVE"));
+    map.insert("FileFormat".into(), ParamInfo::int32(base.file_format, "FILE_FORMAT"));
+    map.insert("FileFormat_RBV".into(), ParamInfo::int32(base.file_format, "FILE_FORMAT"));
+    map.insert("FreeCapture".into(), ParamInfo::int32(base.free_capture, "FREE_CAPTURE"));
+    map.insert("CreateDirectory".into(), ParamInfo::int32(base.create_dir, "CREATE_DIR"));
+    map.insert("CreateDirectory_RBV".into(), ParamInfo::int32(base.create_dir, "CREATE_DIR"));
+    map.insert("WriteStatus".into(), ParamInfo::int32(base.file_write_status, "FILE_WRITE_STATUS"));
+    map.insert("WriteMessage".into(), ParamInfo::string(base.file_write_message, "FILE_WRITE_MESSAGE"));
 
     // ===== simDetector.db params =====
 
@@ -238,35 +258,61 @@ pub fn build_param_registry_from_params(ad: &ADBaseParams, sim: &SimDetectorPara
     map.insert("Noise".into(), ParamInfo::float64(sim.noise, "SIM_NOISE"));
     map.insert("Noise_RBV".into(), ParamInfo::float64(sim.noise, "SIM_NOISE"));
     map.insert("PeakHeightVariation".into(), ParamInfo::float64(sim.peak_height_variation, "SIM_PEAK_HEIGHT_VARIATION"));
+    map.insert("PeakVariation".into(), ParamInfo::float64(sim.peak_height_variation, "SIM_PEAK_HEIGHT_VARIATION"));
+    map.insert("PeakVariation_RBV".into(), ParamInfo::float64(sim.peak_height_variation, "SIM_PEAK_HEIGHT_VARIATION"));
 
     // Sim Int32
     map.insert("SimMode".into(), ParamInfo::int32(sim.sim_mode, "SIM_MODE"));
     map.insert("SimMode_RBV".into(), ParamInfo::int32(sim.sim_mode, "SIM_MODE"));
     map.insert("ResetImage".into(), ParamInfo::int32(sim.reset_image, "RESET_IMAGE"));
+    map.insert("Reset".into(), ParamInfo::int32(sim.reset_image, "RESET_IMAGE"));
+    map.insert("Reset_RBV".into(), ParamInfo::int32(sim.reset_image, "RESET_IMAGE"));
     map.insert("PeakStartX".into(), ParamInfo::int32(sim.peak_start_x, "SIM_PEAK_START_X"));
+    map.insert("PeakStartX_RBV".into(), ParamInfo::int32(sim.peak_start_x, "SIM_PEAK_START_X"));
     map.insert("PeakStartY".into(), ParamInfo::int32(sim.peak_start_y, "SIM_PEAK_START_Y"));
+    map.insert("PeakStartY_RBV".into(), ParamInfo::int32(sim.peak_start_y, "SIM_PEAK_START_Y"));
     map.insert("PeakWidthX".into(), ParamInfo::int32(sim.peak_width_x, "SIM_PEAK_WIDTH_X"));
+    map.insert("PeakWidthX_RBV".into(), ParamInfo::int32(sim.peak_width_x, "SIM_PEAK_WIDTH_X"));
     map.insert("PeakWidthY".into(), ParamInfo::int32(sim.peak_width_y, "SIM_PEAK_WIDTH_Y"));
+    map.insert("PeakWidthY_RBV".into(), ParamInfo::int32(sim.peak_width_y, "SIM_PEAK_WIDTH_Y"));
     map.insert("PeakNumX".into(), ParamInfo::int32(sim.peak_num_x, "SIM_PEAK_NUM_X"));
+    map.insert("PeakNumX_RBV".into(), ParamInfo::int32(sim.peak_num_x, "SIM_PEAK_NUM_X"));
     map.insert("PeakNumY".into(), ParamInfo::int32(sim.peak_num_y, "SIM_PEAK_NUM_Y"));
+    map.insert("PeakNumY_RBV".into(), ParamInfo::int32(sim.peak_num_y, "SIM_PEAK_NUM_Y"));
     map.insert("PeakStepX".into(), ParamInfo::int32(sim.peak_step_x, "SIM_PEAK_STEP_X"));
+    map.insert("PeakStepX_RBV".into(), ParamInfo::int32(sim.peak_step_x, "SIM_PEAK_STEP_X"));
     map.insert("PeakStepY".into(), ParamInfo::int32(sim.peak_step_y, "SIM_PEAK_STEP_Y"));
+    map.insert("PeakStepY_RBV".into(), ParamInfo::int32(sim.peak_step_y, "SIM_PEAK_STEP_Y"));
 
-    // Sine params (Float64 + Int32)
+    // Sine params (Float64 + Int32) — write and readback
     map.insert("XSineOperation".into(), ParamInfo::int32(sim.x_sine_operation, "SIM_XSINE_OPERATION"));
+    map.insert("XSineOperation_RBV".into(), ParamInfo::int32(sim.x_sine_operation, "SIM_XSINE_OPERATION"));
     map.insert("XSine1Amplitude".into(), ParamInfo::float64(sim.x_sine1_amplitude, "SIM_XSINE1_AMPLITUDE"));
+    map.insert("XSine1Amplitude_RBV".into(), ParamInfo::float64(sim.x_sine1_amplitude, "SIM_XSINE1_AMPLITUDE"));
     map.insert("XSine1Frequency".into(), ParamInfo::float64(sim.x_sine1_frequency, "SIM_XSINE1_FREQUENCY"));
+    map.insert("XSine1Frequency_RBV".into(), ParamInfo::float64(sim.x_sine1_frequency, "SIM_XSINE1_FREQUENCY"));
     map.insert("XSine1Phase".into(), ParamInfo::float64(sim.x_sine1_phase, "SIM_XSINE1_PHASE"));
+    map.insert("XSine1Phase_RBV".into(), ParamInfo::float64(sim.x_sine1_phase, "SIM_XSINE1_PHASE"));
     map.insert("XSine2Amplitude".into(), ParamInfo::float64(sim.x_sine2_amplitude, "SIM_XSINE2_AMPLITUDE"));
+    map.insert("XSine2Amplitude_RBV".into(), ParamInfo::float64(sim.x_sine2_amplitude, "SIM_XSINE2_AMPLITUDE"));
     map.insert("XSine2Frequency".into(), ParamInfo::float64(sim.x_sine2_frequency, "SIM_XSINE2_FREQUENCY"));
+    map.insert("XSine2Frequency_RBV".into(), ParamInfo::float64(sim.x_sine2_frequency, "SIM_XSINE2_FREQUENCY"));
     map.insert("XSine2Phase".into(), ParamInfo::float64(sim.x_sine2_phase, "SIM_XSINE2_PHASE"));
+    map.insert("XSine2Phase_RBV".into(), ParamInfo::float64(sim.x_sine2_phase, "SIM_XSINE2_PHASE"));
     map.insert("YSineOperation".into(), ParamInfo::int32(sim.y_sine_operation, "SIM_YSINE_OPERATION"));
+    map.insert("YSineOperation_RBV".into(), ParamInfo::int32(sim.y_sine_operation, "SIM_YSINE_OPERATION"));
     map.insert("YSine1Amplitude".into(), ParamInfo::float64(sim.y_sine1_amplitude, "SIM_YSINE1_AMPLITUDE"));
+    map.insert("YSine1Amplitude_RBV".into(), ParamInfo::float64(sim.y_sine1_amplitude, "SIM_YSINE1_AMPLITUDE"));
     map.insert("YSine1Frequency".into(), ParamInfo::float64(sim.y_sine1_frequency, "SIM_YSINE1_FREQUENCY"));
+    map.insert("YSine1Frequency_RBV".into(), ParamInfo::float64(sim.y_sine1_frequency, "SIM_YSINE1_FREQUENCY"));
     map.insert("YSine1Phase".into(), ParamInfo::float64(sim.y_sine1_phase, "SIM_YSINE1_PHASE"));
+    map.insert("YSine1Phase_RBV".into(), ParamInfo::float64(sim.y_sine1_phase, "SIM_YSINE1_PHASE"));
     map.insert("YSine2Amplitude".into(), ParamInfo::float64(sim.y_sine2_amplitude, "SIM_YSINE2_AMPLITUDE"));
+    map.insert("YSine2Amplitude_RBV".into(), ParamInfo::float64(sim.y_sine2_amplitude, "SIM_YSINE2_AMPLITUDE"));
     map.insert("YSine2Frequency".into(), ParamInfo::float64(sim.y_sine2_frequency, "SIM_YSINE2_FREQUENCY"));
+    map.insert("YSine2Frequency_RBV".into(), ParamInfo::float64(sim.y_sine2_frequency, "SIM_YSINE2_FREQUENCY"));
     map.insert("YSine2Phase".into(), ParamInfo::float64(sim.y_sine2_phase, "SIM_YSINE2_PHASE"));
+    map.insert("YSine2Phase_RBV".into(), ParamInfo::float64(sim.y_sine2_phase, "SIM_YSINE2_PHASE"));
 
     map
 }

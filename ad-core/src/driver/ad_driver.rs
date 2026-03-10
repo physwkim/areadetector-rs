@@ -60,7 +60,7 @@ impl ADDriverBase {
         port_base.set_int32_param(params.base.data_type, 0, 1)?; // UInt8
         port_base.set_int32_param(params.base.color_mode, 0, NDColorMode::Mono as i32)?;
         port_base.set_int32_param(params.base.array_callbacks, 0, 1)?;
-        port_base.set_int32_param(params.base.pool_max_memory, 0, max_memory as i32)?;
+        port_base.set_float64_param(params.base.pool_max_memory, 0, max_memory as f64 / 1_048_576.0)?;
         port_base.set_float64_param(params.gain, 0, 1.0)?;
         port_base.set_int32_param(params.shutter_mode, 0, ShutterMode::None as i32)?;
         port_base.set_float64_param(params.temperature, 0, 25.0)?;
@@ -97,10 +97,10 @@ impl ADDriverBase {
         self.port_base
             .set_int32_param(self.params.base.array_size, 0, info.total_bytes as i32)?;
 
-        self.port_base.set_int32_param(
+        self.port_base.set_float64_param(
             self.params.base.pool_used_memory,
             0,
-            self.pool.allocated_bytes() as i32,
+            self.pool.allocated_bytes() as f64 / 1_048_576.0,
         )?;
 
         let callbacks_enabled =

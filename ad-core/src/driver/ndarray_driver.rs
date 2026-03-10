@@ -31,7 +31,7 @@ impl NDArrayDriverBase {
         let params = NDArrayDriverParams::create(&mut port_base)?;
 
         port_base.set_int32_param(params.array_callbacks, 0, 1)?;
-        port_base.set_int32_param(params.pool_max_memory, 0, max_memory as i32)?;
+        port_base.set_float64_param(params.pool_max_memory, 0, max_memory as f64 / 1_048_576.0)?;
 
         let pool = Arc::new(NDArrayPool::new(max_memory));
 
@@ -72,10 +72,10 @@ impl NDArrayDriverBase {
             .set_int32_param(self.params.unique_id, 0, array.unique_id)?;
 
         // Update pool stats
-        self.port_base.set_int32_param(
+        self.port_base.set_float64_param(
             self.params.pool_used_memory,
             0,
-            self.pool.allocated_bytes() as i32,
+            self.pool.allocated_bytes() as f64 / 1_048_576.0,
         )?;
         self.port_base.set_int32_param(
             self.params.pool_free_buffers,

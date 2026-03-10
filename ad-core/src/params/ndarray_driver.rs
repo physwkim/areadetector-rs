@@ -36,14 +36,21 @@ pub struct NDArrayDriverParams {
     // NDArray data (GenericPointer)
     pub ndarray_data: usize,
 
-    // Pool stats (Int32)
-    pub pool_max_memory: usize,
-    pub pool_used_memory: usize,
+    // Pool stats
+    pub pool_max_memory: usize,   // Float64 (MB)
+    pub pool_used_memory: usize,  // Float64 (MB)
     pub pool_alloc_buffers: usize,
     pub pool_free_buffers: usize,
     pub pool_max_buffers: usize,
     pub pool_pre_alloc: usize,
     pub pool_empty_free_list: usize,
+    pub pool_poll_stats: usize,
+    pub pool_num_pre_alloc_buffers: usize,
+
+    // File I/O extras
+    pub auto_save: usize,
+    pub file_format: usize,
+    pub free_capture: usize,
 
     // File I/O
     pub file_path: usize,
@@ -110,13 +117,20 @@ impl NDArrayDriverParams {
             ndarray_data: base.create_param("NDARRAY_DATA", ParamType::GenericPointer)?,
 
             // Pool stats
-            pool_max_memory: base.create_param("POOL_MAX_MEMORY", ParamType::Int32)?,
-            pool_used_memory: base.create_param("POOL_USED_MEMORY", ParamType::Int32)?,
+            pool_max_memory: base.create_param("POOL_MAX_MEMORY", ParamType::Float64)?,
+            pool_used_memory: base.create_param("POOL_USED_MEMORY", ParamType::Float64)?,
             pool_alloc_buffers: base.create_param("POOL_ALLOC_BUFFERS", ParamType::Int32)?,
             pool_free_buffers: base.create_param("POOL_FREE_BUFFERS", ParamType::Int32)?,
             pool_max_buffers: base.create_param("POOL_MAX_BUFFERS", ParamType::Int32)?,
             pool_pre_alloc: base.create_param("POOL_PRE_ALLOC", ParamType::Int32)?,
             pool_empty_free_list: base.create_param("POOL_EMPTY_FREE_LIST", ParamType::Int32)?,
+            pool_poll_stats: base.create_param("POOL_POLL_STATS", ParamType::Int32)?,
+            pool_num_pre_alloc_buffers: base.create_param("POOL_NUM_PRE_ALLOC_BUFFERS", ParamType::Int32)?,
+
+            // File I/O extras
+            auto_save: base.create_param("AUTO_SAVE", ParamType::Int32)?,
+            file_format: base.create_param("FILE_FORMAT", ParamType::Int32)?,
+            free_capture: base.create_param("FREE_CAPTURE", ParamType::Int32)?,
 
             // File I/O
             file_path: base.create_param("FILE_PATH", ParamType::Octet)?,
